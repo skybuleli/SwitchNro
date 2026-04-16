@@ -182,6 +182,22 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new SplSslService(splState));
         _ipcServiceManager.RegisterService(new SplEsService(splState));
 
+        // Fatal 致命错误服务 (共享 FatalState) — NRO 启动第一站
+        var fatalState = new FatalState();
+        _ipcServiceManager.RegisterService(new FatalUService(fatalState));
+        _ipcServiceManager.RegisterService(new FatalPService(fatalState));
+
+        // APM 性能管理服务 (共享 ApmState) — appletInit 隐式依赖
+        var apmState = new ApmState();
+        _ipcServiceManager.RegisterService(new ApmService(apmState));
+        _ipcServiceManager.RegisterService(new ApmPService(apmState));
+        _ipcServiceManager.RegisterService(new ApmSysService(apmState));
+
+        // RO 可重定位对象服务 (共享 RoState) — NRO 重定位核心
+        var roState = new RoState();
+        _ipcServiceManager.RegisterService(new Ro1Service(roState));
+        _ipcServiceManager.RegisterService(new Ro1aService(roState));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 
