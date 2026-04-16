@@ -21,7 +21,7 @@ internal static class TimeHelper
     {
         var ticks = (ulong)DateTimeOffset.UtcNow.UtcTicks;
         response.Data.AddRange(BitConverter.GetBytes(ticks));
-        response.Data.AddRange(BitConverter.GetBytes(0)); // clockSourceId
+        response.Data.AddRange(BitConverter.GetBytes(0UL)); // clockSourceId (uint64)
         return ResultCode.Success;
     }
 
