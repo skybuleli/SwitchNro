@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SwitchNro.Tests</RootNamespace>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1707;CA1816</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="*" />
+    <PackageReference Include="xunit" Version="*" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
+    <ProjectReference Include="..\SwitchNro.Memory\SwitchNro.Memory.csproj" />
+    <ProjectReference Include="..\SwitchNro.Cpu\SwitchNro.Cpu.csproj" />
+    <ProjectReference Include="..\SwitchNro.NroLoader\SwitchNro.NroLoader.csproj" />
+    <ProjectReference Include="..\SwitchNro.Horizon\SwitchNro.Horizon.csproj" />
+    <ProjectReference Include="..\SwitchNro.HLE\SwitchNro.HLE.csproj" />
+  </ItemGroup>
+</Project>

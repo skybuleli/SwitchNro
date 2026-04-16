@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SwitchNro.Debugger</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
+    <ProjectReference Include="..\SwitchNro.Cpu\SwitchNro.Cpu.csproj" />
+    <ProjectReference Include="..\SwitchNro.Memory\SwitchNro.Memory.csproj" />
+    <ProjectReference Include="..\SwitchNro.Graphics.GAL\SwitchNro.Graphics.GAL.csproj" />
+  </ItemGroup>
+</Project>

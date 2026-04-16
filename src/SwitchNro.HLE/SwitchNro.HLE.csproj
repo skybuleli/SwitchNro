@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SwitchNro.HLE</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
+    <ProjectReference Include="..\SwitchNro.Horizon\SwitchNro.Horizon.csproj" />
+  </ItemGroup>
+</Project>

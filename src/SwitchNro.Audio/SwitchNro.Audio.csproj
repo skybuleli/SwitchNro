@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SwitchNro.Audio</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
+  </ItemGroup>
+</Project>

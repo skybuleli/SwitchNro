@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SwitchNro.UI</RootNamespace>
+    <OutputType>WinExe</OutputType>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.2.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.*" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.*" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.*" />
+    <PackageReference Include="Avalonia.Native" Version="11.2.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
+    <ProjectReference Include="..\SwitchNro.Memory\SwitchNro.Memory.csproj" />
+    <ProjectReference Include="..\SwitchNro.Cpu\SwitchNro.Cpu.csproj" />
+    <ProjectReference Include="..\SwitchNro.NroLoader\SwitchNro.NroLoader.csproj" />
+    <ProjectReference Include="..\SwitchNro.Horizon\SwitchNro.Horizon.csproj" />
+    <ProjectReference Include="..\SwitchNro.HLE\SwitchNro.HLE.csproj" />
+    <ProjectReference Include="..\SwitchNro.Graphics.GAL\SwitchNro.Graphics.GAL.csproj" />
+    <ProjectReference Include="..\SwitchNro.Graphics.Metal\SwitchNro.Graphics.Metal.csproj" />
+    <ProjectReference Include="..\SwitchNro.Graphics.Shader\SwitchNro.Graphics.Shader.csproj" />
+    <ProjectReference Include="..\SwitchNro.Graphics.Texture\SwitchNro.Graphics.Texture.csproj" />
+    <ProjectReference Include="..\SwitchNro.Input\SwitchNro.Input.csproj" />
+    <ProjectReference Include="..\SwitchNro.Audio\SwitchNro.Audio.csproj" />
+    <ProjectReference Include="..\SwitchNro.Audio.SDL2\SwitchNro.Audio.SDL2.csproj" />
+    <ProjectReference Include="..\SwitchNro.Debugger\SwitchNro.Debugger.csproj" />
+  </ItemGroup>
+</Project>

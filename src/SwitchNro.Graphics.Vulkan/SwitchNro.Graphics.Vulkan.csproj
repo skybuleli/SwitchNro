@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SwitchNro.Graphics.Vulkan</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
+    <ProjectReference Include="..\SwitchNro.Graphics.GAL\SwitchNro.Graphics.GAL.csproj" />
+  </ItemGroup>
+</Project>
