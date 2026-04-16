@@ -18,6 +18,12 @@ public sealed class NsAppManagerState
     /// <summary>下一个应用记录 ID</summary>
     private ulong _nextRecordId = 0x0100000000000000;
 
+    /// <summary>缓存的 NACP 控制数据 (ProgramId → 0x4000 byte buffer)</summary>
+    private readonly Dictionary<ulong, byte[]> _nacpCache = new();
+
+    /// <summary>缓存的 DisplayInfo 名称数据 (ProgramId → 0x200 byte padded UTF-16LE name)</summary>
+    private readonly Dictionary<ulong, byte[]> _displayNameCache = new();
+
     /// <summary>获取所有应用记录</summary>
     public IReadOnlyList<ApplicationRecord> Records => _records;
 
@@ -45,6 +51,26 @@ public sealed class NsAppManagerState
         return null;
     }
 
+    /// <summary>获取缓存的 NACP 数据；如不存在则构建并缓存。调用者不得修改返回的缓冲区。</summary>
+    public byte[] GetNacpBuffer(ulong programId)
+    {
+        if (_nacpCache.TryGetValue(programId, out var cached))
+            return cached;
+        var record = FindByProgramId(programId);
+        if (record == null) return Array.Empty<byte>();
+        return BuildNacpBuffer(record);
+    }
+
+    /// <summary>获取缓存的 DisplayInfo 名称数据；如不存在则构建并缓存。调用者不得修改返回的缓冲区。</summary>
+    public byte[] GetDisplayNameBuffer(ulong programId)
+    {
+        if (_displayNameCache.TryGetValue(programId, out var cached))
+            return cached;
+        var record = FindByProgramId(programId);
+        if (record == null) return Array.Empty<byte>();
+        return BuildDisplayNameBuffer(record);
+    }
+
     /// <summary>删除应用记录</summary>
     public bool RemoveRecord(ulong programId)
     {
@@ -53,10 +79,32 @@ public sealed class NsAppManagerState
             if (_records[i].ProgramId == programId)
             {
                 _records.RemoveAt(i);
+                _nacpCache.Remove(programId);
+                _displayNameCache.Remove(programId);
                 return true;
             }
         }
         return false;
+    }
+
+    /// <summary>构建并缓存 NACP 控制数据 (0x4000 bytes)</summary>
+    private byte[] BuildNacpBuffer(ApplicationRecord record)
+    {
+        var nacp = new byte[0x4000];
+        var nameBytes = Encoding.Unicode.GetBytes(record.Name);
+        Array.Copy(nameBytes, nacp, Math.Min(nameBytes.Length, 0x200));
+        _nacpCache[record.ProgramId] = nacp;
+        return nacp;
+    }
+
+    /// <summary>构建并缓存 DisplayInfo 名称数据 (0x200 bytes, UTF-16LE padded)</summary>
+    private byte[] BuildDisplayNameBuffer(ApplicationRecord record)
+    {
+        var paddedName = new byte[0x200];
+        var nameBytes = Encoding.Unicode.GetBytes(record.Name);
+        Array.Copy(nameBytes, paddedName, Math.Min(nameBytes.Length, 0x200));
+        _displayNameCache[record.ProgramId] = paddedName;
+        return paddedName;
     }
 }
 
@@ -271,13 +319,9 @@ public sealed class NsAm2Service : IIpcService
         var record = _state.FindByProgramId(programId);
         if (record == null) return ResultCode.NsResult(6); // Not found
 
-        // TODO: 0x200 allocation per call — consider caching per ProgramId
-        // ApplicationDisplayInfo: ProgramId(8) + Name(0x200 bytes, UTF-16LE) + padding = 0x208 bytes
+        // ApplicationDisplayInfo: ProgramId(8) + Name(0x200 bytes, UTF-16LE, cached) = 0x208 bytes
         response.Data.AddRange(BitConverter.GetBytes(record.ProgramId));
-        var nameBytes = Encoding.Unicode.GetBytes(record.Name);
-        var paddedName = new byte[0x200];
-        Array.Copy(nameBytes, paddedName, Math.Min(nameBytes.Length, 0x200));
-        response.Data.AddRange(paddedName);
+        response.Data.AddRange(_state.GetDisplayNameBuffer(programId));
         Logger.Debug(nameof(NsAm2Service), $"ns:am2: GetApplicationDisplayInfo(id=0x{programId:X16}) → '{record.Name}'");
         return ResultCode.Success;
     }
@@ -315,14 +359,9 @@ public sealed class NsAm2Service : IIpcService
         var record = _state.FindByProgramId(programId);
         if (record == null) return ResultCode.NsResult(6);
 
-        // TODO: 16KB allocation per call — cache NACP buffer per ProgramId in NsAppManagerState to reduce GC pressure
-        // NACP 控制数据 (0x4000 bytes 标准大小，此处返回简化版)
-        var nacp = new byte[0x4000];
-        // 写入应用名称 (offset 0x3000, UTF-16LE, max 0x200 bytes per language entry)
-        var nameBytes = Encoding.Unicode.GetBytes(record.Name);
-        Array.Copy(nameBytes, nacp, Math.Min(nameBytes.Length, 0x200));
+        // NACP 控制数据 (0x4000 bytes, cached per ProgramId)
         response.Data.AddRange(BitConverter.GetBytes(0x4000U)); // size
-        response.Data.AddRange(nacp);
+        response.Data.AddRange(_state.GetNacpBuffer(programId));
         Logger.Debug(nameof(NsAm2Service), $"ns:am2: GetAppControlData(id=0x{programId:X16}) → 0x4000 bytes");
         return ResultCode.Success;
     }
