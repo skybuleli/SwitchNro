@@ -203,6 +203,12 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new AudRenUService(audRenState));
         _ipcServiceManager.RegisterService(new AudRenU2Service(audRenState));
 
+        // PL 共享字体服务 (共享 PlState) — 文字渲染必须
+        var plState = new PlState();
+        _ipcServiceManager.RegisterService(new PlUService(plState));
+        _ipcServiceManager.RegisterService(new PlSService(plState));
+        _ipcServiceManager.RegisterService(new PlAService(plState));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 
