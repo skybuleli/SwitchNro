@@ -67,6 +67,19 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new ViService());
         _ipcServiceManager.RegisterService(new HidService());
 
+        // 新增 HLE 服务
+        _ipcServiceManager.RegisterService(new NvService());
+        _ipcServiceManager.RegisterService(new NvMemPService());
+        _ipcServiceManager.RegisterService(new AmService());
+        _ipcServiceManager.RegisterService(new AppletAeService());
+        _ipcServiceManager.RegisterService(new TimeService());
+        _ipcServiceManager.RegisterService(new TimeUService());
+        _ipcServiceManager.RegisterService(new SettingsService());
+        _ipcServiceManager.RegisterService(new SetSysService());
+        _ipcServiceManager.RegisterService(new AudioOutService());
+        _ipcServiceManager.RegisterService(new SocketService());
+        _ipcServiceManager.RegisterService(new SocketUService());
+
         // 创建音频后端
         _audioBackend = new Sdl2AudioBackend();
         _audioBackend.Initialize(new AudioBackendConfig());
