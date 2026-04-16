@@ -34,6 +34,11 @@ public readonly struct ResultCode : IEquatable<ResultCode>
     public static ResultCode NifmResult(int description) => new(31, description); // NIFM module
     public static ResultCode AccResult(int description) => new(5, description);   // Account module
     public static ResultCode PctlResult(int description) => new(25, description); // Parental Control module
+    public static ResultCode FriendResult(int description) => new(11, description); // Friend module
+    public static ResultCode NsResult(int description) => new(16, description);     // NS (Application Manager) module
+    public static ResultCode BcatResult(int description) => new(42, description);  // BCAT module
+    public static ResultCode NewsResult(int description) => new(33, description); // News module
+    public static ResultCode MmResult(int description) => new(39, description);   // MM (Memory Monitor) module
 
     public override string ToString() => IsSuccess ? "Success" : $"0x{_value:X8} (Module={Module}, Desc={Description})";
     public bool Equals(ResultCode other) => _value == other._value;

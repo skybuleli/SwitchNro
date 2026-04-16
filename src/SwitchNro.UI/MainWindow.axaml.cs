@@ -133,6 +133,42 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new PctlRService(pctlState));
         _ipcServiceManager.RegisterService(new PctlAService(pctlState));
 
+        // 好友服务 (共享 FriendState)
+        var friendState = new FriendState();
+        _ipcServiceManager.RegisterService(new FriendUService(friendState));
+        _ipcServiceManager.RegisterService(new FriendVService(friendState));
+        _ipcServiceManager.RegisterService(new FriendMService(friendState));
+        _ipcServiceManager.RegisterService(new FriendSService(friendState));
+        _ipcServiceManager.RegisterService(new FriendAService(friendState));
+
+        // 应用管理服务 (共享 NsAppManagerState)
+        var nsState = new NsAppManagerState();
+        _ipcServiceManager.RegisterService(new NsAm2Service(nsState));
+        _ipcServiceManager.RegisterService(new NsAmService(nsState));
+        _ipcServiceManager.RegisterService(new NsAeService(nsState));
+        _ipcServiceManager.RegisterService(new NsSuService());
+        _ipcServiceManager.RegisterService(new NsDevService());
+
+        // BCAT 服务 (共享 BcatState)
+        var bcatState = new BcatState();
+        _ipcServiceManager.RegisterService(new BcatAService(bcatState));
+        _ipcServiceManager.RegisterService(new BcatMService(bcatState));
+        _ipcServiceManager.RegisterService(new BcatUService(bcatState));
+        _ipcServiceManager.RegisterService(new BcatSService(bcatState));
+
+        // News 服务 (共享 NewsState)
+        var newsState = new NewsState();
+        _ipcServiceManager.RegisterService(new NewsAService(newsState));
+        _ipcServiceManager.RegisterService(new NewsCService(newsState));
+        _ipcServiceManager.RegisterService(new NewsMService(newsState));
+        _ipcServiceManager.RegisterService(new NewsPService(newsState));
+        _ipcServiceManager.RegisterService(new NewsVService(newsState));
+
+        // MM 内存监控服务 (共享 MmState)
+        var mmState = new MmState();
+        _ipcServiceManager.RegisterService(new MmUService(mmState));
+        _ipcServiceManager.RegisterService(new MmSvService(mmState));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 
