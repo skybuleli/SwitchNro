@@ -169,6 +169,19 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new MmUService(mmState));
         _ipcServiceManager.RegisterService(new MmSvService(mmState));
 
+        // PSC 电源管理服务 (共享 PscState)
+        var pscState = new PscState();
+        _ipcServiceManager.RegisterService(new PscMService(pscState));
+        _ipcServiceManager.RegisterService(new PscCService(pscState));
+
+        // SPL 安全平台服务 (共享 SplState)
+        var splState = new SplState();
+        _ipcServiceManager.RegisterService(new SplGeneralService(splState));
+        _ipcServiceManager.RegisterService(new SplMigService(splState));
+        _ipcServiceManager.RegisterService(new SplFsService(splState));
+        _ipcServiceManager.RegisterService(new SplSslService(splState));
+        _ipcServiceManager.RegisterService(new SplEsService(splState));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 

@@ -38,7 +38,9 @@ public readonly struct ResultCode : IEquatable<ResultCode>
     public static ResultCode NsResult(int description) => new(16, description);     // NS (Application Manager) module
     public static ResultCode BcatResult(int description) => new(42, description);  // BCAT module
     public static ResultCode NewsResult(int description) => new(33, description); // News module
-    public static ResultCode MmResult(int description) => new(39, description);   // MM (Memory Monitor) module
+    public static ResultCode MmResult(int description) => new(39, description);     // MM (Memory Monitor) module
+    public static ResultCode PscResult(int description) => new(35, description);   // PSC (Power State Control) module
+    public static ResultCode SplResult(int description) => new(24, description);   // SPL (Secure Platform Layer) module
 
     public override string ToString() => IsSuccess ? "Success" : $"0x{_value:X8} (Module={Module}, Desc={Description})";
     public bool Equals(ResultCode other) => _value == other._value;
