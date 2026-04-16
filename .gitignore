@@ -1,35 +1,96 @@
-## .NET
-bin/
-obj/
+## .NET Build
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
 out/
 
-## IDE
-.vs/
-.vscode/
-.idea/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-## Build
+## Build Configuration
 [Dd]ebug/
 [Rr]elease/
 x64/
 x86/
 bld/
-[Bb]in/
-[Oo]bj/
+[Aa]rm/
+[Aa]rm64/
+w([Ww])in32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+b([Bb])in/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vscode/
+
+## JetBrains Rider
+.idea/
+*.DotSettings.user
+
+## Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
 ## NuGet
 **/[Pp]ackages/*
 *.nupkg
-**/[Ll]ogs/**
+**/[Pp]ackage[Tt]est/
+*.snupkg
+**/[Gg]et[Cc]ache/
+*.nuget.props
+*.nuget.targets
 
-## OS
+## Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+## .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
 
-## Misc
-*.swp
+## Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## Linux
 *~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+## Miscellaneous
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+*.rej
