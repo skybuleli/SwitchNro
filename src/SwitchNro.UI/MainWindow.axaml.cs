@@ -102,6 +102,16 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new LdrDmntService(_horizonSystem));
         _ipcServiceManager.RegisterService(new LdrPmService(_horizonSystem));
 
+        // 日志管理服务
+        var lmLogger = new LmLoggerService();
+        _ipcServiceManager.RegisterService(new LmService(lmLogger));
+        _ipcServiceManager.RegisterService(new LmGetService(lmLogger));
+
+        // ARP Glue 服务
+        var arpRegistry = new ArpRegistry();
+        _ipcServiceManager.RegisterService(new ArpRService(arpRegistry));
+        _ipcServiceManager.RegisterService(new ArpWService(arpRegistry));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 
