@@ -97,6 +97,11 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new PmShellService(_horizonSystem));
         _ipcServiceManager.RegisterService(new PmBmService());
 
+        // 加载器服务
+        _ipcServiceManager.RegisterService(new LdrShelService());
+        _ipcServiceManager.RegisterService(new LdrDmntService(_horizonSystem));
+        _ipcServiceManager.RegisterService(new LdrPmService(_horizonSystem));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 

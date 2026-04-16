@@ -27,6 +27,7 @@ public readonly struct ResultCode : IEquatable<ResultCode>
     public static ResultCode HtcResult(int description) => new(4, description);
     public static ResultCode SfResult(int description) => new(10, description);
     public static ResultCode PmResult(int description) => new(15, description); // Process Manager module
+    public static ResultCode LdrResult(int description) => new(9, description);  // Loader module
 
     public override string ToString() => IsSuccess ? "Success" : $"0x{_value:X8} (Module={Module}, Desc={Description})";
     public bool Equals(ResultCode other) => _value == other._value;
