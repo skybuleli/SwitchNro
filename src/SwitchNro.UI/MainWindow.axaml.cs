@@ -91,6 +91,12 @@ public partial class MainWindow : Window, IDisposable
         // 创建 Horizon 系统
         _horizonSystem = new HorizonSystem(_memory, _svcDispatcher);
 
+        // 进程管理服务（需要在 _horizonSystem 创建之后注册）
+        _ipcServiceManager.RegisterService(new PmDmntService(_horizonSystem));
+        _ipcServiceManager.RegisterService(new PmInfoService(_horizonSystem));
+        _ipcServiceManager.RegisterService(new PmShellService(_horizonSystem));
+        _ipcServiceManager.RegisterService(new PmBmService());
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 
