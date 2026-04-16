@@ -43,6 +43,7 @@ public readonly struct ResultCode : IEquatable<ResultCode>
     public static ResultCode FatalResult(int description) => new(168, description); // Fatal module
     public static ResultCode ApmResult(int description) => new(17, description);  // APM (Application Performance Management) module
     public static ResultCode RoResult(int description) => new(21, description);   // RO (Relocatable Object) module
+    public static ResultCode AudRenResult(int description) => new(129, description); // Audio Renderer module
     public static ResultCode SplResult(int description) => new(24, description);   // SPL (Secure Platform Layer) module
 
     public override string ToString() => IsSuccess ? "Success" : $"0x{_value:X8} (Module={Module}, Desc={Description})";

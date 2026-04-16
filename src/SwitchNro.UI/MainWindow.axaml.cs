@@ -198,6 +198,11 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new Ro1Service(roState));
         _ipcServiceManager.RegisterService(new Ro1aService(roState));
 
+        // Audio Renderer 音频渲染服务 (共享 AudRenState) — 90% homebrew 游戏需要
+        var audRenState = new AudRenState();
+        _ipcServiceManager.RegisterService(new AudRenUService(audRenState));
+        _ipcServiceManager.RegisterService(new AudRenU2Service(audRenState));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 
