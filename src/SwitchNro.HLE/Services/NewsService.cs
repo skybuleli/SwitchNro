@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using SwitchNro.Common;
 using SwitchNro.Common.Logging;
@@ -18,6 +19,9 @@ public sealed class NewsState
     /// <summary>是否有新到达的新闻</summary>
     private bool _newlyArrived;
 
+    /// <summary>缓存的新闻条目序列化数据 (EntryId → byte buffer)。调用者不得修改返回的缓冲区。</summary>
+    private readonly Dictionary<ulong, byte[]> _entryDataCache = new();
+
     /// <summary>获取所有新闻条目</summary>
     public IReadOnlyList<NewsEntry> Entries => _entries;
 
@@ -33,6 +37,79 @@ public sealed class NewsState
 
     /// <summary>获取新闻条目数量</summary>
     public int GetCount() => _entries.Count;
+
+    /// <summary>按条目 ID 查找新闻条目</summary>
+    public NewsEntry? FindById(ulong id)
+    {
+        foreach (var e in _entries)
+            if (e.Id == id) return e;
+        return null;
+    }
+
+    /// <summary>获取缓存的新闻条目序列化数据；如不存在则构建并缓存。调用者不得修改返回的缓冲区。</summary>
+    public byte[] GetEntryDataBuffer(ulong id)
+    {
+        if (_entryDataCache.TryGetValue(id, out var cached))
+            return cached;
+        var entry = FindById(id);
+        if (entry == null) return Array.Empty<byte>();
+        return BuildEntryDataBuffer(entry);
+    }
+
+    /// <summary>按标签筛选新闻条目</summary>
+    public IReadOnlyList<NewsEntry> FindByTag(string tag)
+    {
+        var result = new List<NewsEntry>();
+        foreach (var e in _entries)
+            if (e.Tag == tag) result.Add(e);
+        return result;
+    }
+
+    /// <summary>按标签统计新闻条目数量</summary>
+    public uint CountByTag(string tag)
+    {
+        uint count = 0;
+        foreach (var e in _entries)
+            if (e.Tag == tag) count++;
+        return count;
+    }
+
+    /// <summary>删除新闻条目并使缓存失效</summary>
+    public bool RemoveEntry(ulong id)
+    {
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            if (_entries[i].Id == id)
+            {
+                _entries.RemoveAt(i);
+                _entryDataCache.Remove(id);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>构建并缓存新闻条目序列化数据</summary>
+    /// <remarks>布局: Id(8) + Title(0x80 UTF-16LE) + Content(0x200 UTF-16LE) + Timestamp(8) + Tag(0x18 UTF-16LE) = 0x2A8 bytes</remarks>
+    private byte[] BuildEntryDataBuffer(NewsEntry entry)
+    {
+        var buf = new byte[0x2A8];
+        // Id (offset 0, 8 bytes)
+        BitConverter.GetBytes(entry.Id).CopyTo(buf, 0);
+        // Title (offset 8, 0x80 bytes, UTF-16LE padded)
+        var titleBytes = Encoding.Unicode.GetBytes(entry.Title);
+        Array.Copy(titleBytes, 0, buf, 8, Math.Min(titleBytes.Length, 0x80));
+        // Content (offset 0x88, 0x200 bytes, UTF-16LE padded)
+        var contentBytes = Encoding.Unicode.GetBytes(entry.Content);
+        Array.Copy(contentBytes, 0, buf, 0x88, Math.Min(contentBytes.Length, 0x200));
+        // Timestamp (offset 0x288, 8 bytes)
+        BitConverter.GetBytes(entry.Timestamp).CopyTo(buf, 0x288);
+        // Tag (offset 0x290, 0x18 bytes, UTF-16LE padded)
+        var tagBytes = Encoding.Unicode.GetBytes(entry.Tag);
+        Array.Copy(tagBytes, 0, buf, 0x290, Math.Min(tagBytes.Length, 0x18));
+        _entryDataCache[entry.Id] = buf;
+        return buf;
+    }
 }
 
 /// <summary>新闻条目</summary>
@@ -197,59 +274,93 @@ public sealed class NewsDataService : IIpcService
         return ResultCode.Success;
     }
 
-    /// <summary>命令 1: GetNews — 获取新闻条目 (stub)</summary>
+    /// <summary>命令 1: GetNews — 获取新闻条目</summary>
     private ResultCode GetNews(IpcRequest request, ref IpcResponse response)
     {
-        response.Data.AddRange(BitConverter.GetBytes(0U)); // count = 0
-        Logger.Debug(nameof(NewsDataService), "news:data: GetNews → 0 (stub)");
+        var entries = _state.Entries;
+        response.Data.AddRange(BitConverter.GetBytes((uint)entries.Count));
+        foreach (var entry in entries)
+            response.Data.AddRange(_state.GetEntryDataBuffer(entry.Id));
+        Logger.Debug(nameof(NewsDataService), $"news:data: GetNews → {entries.Count} entries");
         return ResultCode.Success;
     }
 
-    /// <summary>命令 2: GetNewsCountForApplication — 获取应用新闻数量 (stub)</summary>
+    /// <summary>命令 2: GetNewsCountForApplication — 获取应用新闻数量</summary>
     private ResultCode GetNewsCountForApplication(IpcRequest request, ref IpcResponse response)
     {
-        response.Data.AddRange(BitConverter.GetBytes(0U));
-        Logger.Debug(nameof(NewsDataService), "news:data: GetNewsCountForApplication → 0 (stub)");
+        if (request.Data.Length < 8) return ResultCode.NewsResult(2);
+        ulong programId = BitConverter.ToUInt64(request.Data, 0);
+        string tag = programId.ToString("X16", CultureInfo.InvariantCulture);
+        uint count = _state.CountByTag(tag);
+        response.Data.AddRange(BitConverter.GetBytes(count));
+        Logger.Debug(nameof(NewsDataService), $"news:data: GetNewsCountForApplication(id=0x{programId:X16}) → {count}");
         return ResultCode.Success;
     }
 
-    /// <summary>命令 3: GetNewsForApplication — 获取应用新闻条目 (stub)</summary>
+    /// <summary>命令 3: GetNewsForApplication — 获取应用新闻条目</summary>
     private ResultCode GetNewsForApplication(IpcRequest request, ref IpcResponse response)
     {
-        response.Data.AddRange(BitConverter.GetBytes(0U));
-        Logger.Debug(nameof(NewsDataService), "news:data: GetNewsForApplication → 0 (stub)");
+        if (request.Data.Length < 8) return ResultCode.NewsResult(2);
+        ulong programId = BitConverter.ToUInt64(request.Data, 0);
+        string tag = programId.ToString("X16", CultureInfo.InvariantCulture);
+        var matching = _state.FindByTag(tag);
+        response.Data.AddRange(BitConverter.GetBytes((uint)matching.Count));
+        foreach (var entry in matching)
+            response.Data.AddRange(_state.GetEntryDataBuffer(entry.Id));
+        Logger.Debug(nameof(NewsDataService), $"news:data: GetNewsForApplication(id=0x{programId:X16}) → {matching.Count} entries");
         return ResultCode.Success;
     }
 
-    /// <summary>命令 4: GetNewsCountForApplicationWithTag — 获取带标签应用新闻数量 (stub)</summary>
+    /// <summary>命令 4: GetNewsCountForApplicationWithTag — 获取带标签应用新闻数量</summary>
     private ResultCode GetNewsCountForApplicationWithTag(IpcRequest request, ref IpcResponse response)
     {
-        response.Data.AddRange(BitConverter.GetBytes(0U));
-        Logger.Debug(nameof(NewsDataService), "news:data: GetNewsCountForApplicationWithTag → 0 (stub)");
+        if (request.Data.Length < 8 + 0x20) return ResultCode.NewsResult(2);
+        ulong programId = BitConverter.ToUInt64(request.Data, 0);
+        string tag = Encoding.Unicode.GetString(request.Data, 8, 0x18).TrimEnd('\0');
+        uint count = _state.CountByTag(tag);
+        response.Data.AddRange(BitConverter.GetBytes(count));
+        Logger.Debug(nameof(NewsDataService), $"news:data: GetNewsCountForApplicationWithTag(id=0x{programId:X16}, tag='{tag}') → {count}");
         return ResultCode.Success;
     }
 
-    /// <summary>命令 5: GetNewsForApplicationWithTag — 获取带标签应用新闻条目 (stub)</summary>
+    /// <summary>命令 5: GetNewsForApplicationWithTag — 获取带标签应用新闻条目</summary>
     private ResultCode GetNewsForApplicationWithTag(IpcRequest request, ref IpcResponse response)
     {
-        response.Data.AddRange(BitConverter.GetBytes(0U));
-        Logger.Debug(nameof(NewsDataService), "news:data: GetNewsForApplicationWithTag → 0 (stub)");
+        if (request.Data.Length < 8 + 0x20) return ResultCode.NewsResult(2);
+        ulong programId = BitConverter.ToUInt64(request.Data, 0);
+        string tag = Encoding.Unicode.GetString(request.Data, 8, 0x18).TrimEnd('\0');
+        var matching = _state.FindByTag(tag);
+        response.Data.AddRange(BitConverter.GetBytes((uint)matching.Count));
+        foreach (var entry in matching)
+            response.Data.AddRange(_state.GetEntryDataBuffer(entry.Id));
+        Logger.Debug(nameof(NewsDataService), $"news:data: GetNewsForApplicationWithTag(id=0x{programId:X16}, tag='{tag}') → {matching.Count} entries");
         return ResultCode.Success;
     }
 
-    /// <summary>命令 6: GetNewsCountForApplicationWithTagAndLanguage — 获取带标签语言新闻数量 (stub)</summary>
+    /// <summary>命令 6: GetNewsCountForApplicationWithTagAndLanguage — 获取带标签语言新闻数量</summary>
     private ResultCode GetNewsCountForApplicationWithTagAndLanguage(IpcRequest request, ref IpcResponse response)
     {
-        response.Data.AddRange(BitConverter.GetBytes(0U));
-        Logger.Debug(nameof(NewsDataService), "news:data: GetNewsCountForApplicationWithTagAndLanguage → 0 (stub)");
+        if (request.Data.Length < 8 + 0x20 + 8) return ResultCode.NewsResult(2);
+        ulong programId = BitConverter.ToUInt64(request.Data, 0);
+        string tag = Encoding.Unicode.GetString(request.Data, 8, 0x18).TrimEnd('\0');
+        // Language code is at offset 8+0x20 but filtering by language is not supported — count all matching tag
+        uint count = _state.CountByTag(tag);
+        response.Data.AddRange(BitConverter.GetBytes(count));
+        Logger.Debug(nameof(NewsDataService), $"news:data: GetNewsCountForApplicationWithTagAndLanguage(id=0x{programId:X16}, tag='{tag}') → {count}");
         return ResultCode.Success;
     }
 
-    /// <summary>命令 7: GetNewsForApplicationWithTagAndLanguage — 获取带标签语言新闻条目 (stub)</summary>
+    /// <summary>命令 7: GetNewsForApplicationWithTagAndLanguage — 获取带标签语言新闻条目</summary>
     private ResultCode GetNewsForApplicationWithTagAndLanguage(IpcRequest request, ref IpcResponse response)
     {
-        response.Data.AddRange(BitConverter.GetBytes(0U));
-        Logger.Debug(nameof(NewsDataService), "news:data: GetNewsForApplicationWithTagAndLanguage → 0 (stub)");
+        if (request.Data.Length < 8 + 0x20 + 8) return ResultCode.NewsResult(2);
+        ulong programId = BitConverter.ToUInt64(request.Data, 0);
+        string tag = Encoding.Unicode.GetString(request.Data, 8, 0x18).TrimEnd('\0');
+        var matching = _state.FindByTag(tag);
+        response.Data.AddRange(BitConverter.GetBytes((uint)matching.Count));
+        foreach (var entry in matching)
+            response.Data.AddRange(_state.GetEntryDataBuffer(entry.Id));
+        Logger.Debug(nameof(NewsDataService), $"news:data: GetNewsForApplicationWithTagAndLanguage(id=0x{programId:X16}, tag='{tag}') → {matching.Count} entries");
         return ResultCode.Success;
     }
 
