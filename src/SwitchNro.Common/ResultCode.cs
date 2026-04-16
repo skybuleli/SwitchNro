@@ -30,6 +30,8 @@ public readonly struct ResultCode : IEquatable<ResultCode>
     public static ResultCode LdrResult(int description) => new(9, description);  // Loader module
     public static ResultCode LmResult(int description) => new(7, description);   // Log Manager module
     public static ResultCode ArpResult(int description) => new(29, description); // ARP module (glue)
+    public static ResultCode SslResult(int description) => new(22, description); // SSL module
+    public static ResultCode NifmResult(int description) => new(31, description); // NIFM module
 
     public override string ToString() => IsSuccess ? "Success" : $"0x{_value:X8} (Module={Module}, Desc={Description})";
     public bool Equals(ResultCode other) => _value == other._value;

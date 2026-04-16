@@ -112,6 +112,15 @@ public partial class MainWindow : Window, IDisposable
         _ipcServiceManager.RegisterService(new ArpRService(arpRegistry));
         _ipcServiceManager.RegisterService(new ArpWService(arpRegistry));
 
+        // SSL 服务
+        _ipcServiceManager.RegisterService(new SslService());
+
+        // 网络接口管理服务 (共享 NifmGeneralService)
+        var nifmGeneral = new NifmGeneralService();
+        _ipcServiceManager.RegisterService(new NifmUService(nifmGeneral));
+        _ipcServiceManager.RegisterService(new NifmSService(nifmGeneral));
+        _ipcServiceManager.RegisterService(new NifmAService(nifmGeneral));
+
         // 注册 SVC 处理函数
         RegisterCoreSvcs();
 
