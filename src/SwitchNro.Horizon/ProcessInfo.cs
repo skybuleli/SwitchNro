@@ -26,9 +26,6 @@ public sealed record ProcessInfo
     /// <summary>主线程栈大小</summary>
     public ulong MainStackSize { get; init; } = 0x100000; // 1MB 默认
 
-    /// <summary>堆内存大小</summary>
-    public ulong HeapSize { get; set; }
-
     /// <summary>进程类别</summary>
     public ProcessCategory Category { get; init; } = ProcessCategory.Application;
 }

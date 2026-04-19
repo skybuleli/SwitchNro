@@ -1,0 +1,276 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "\u4f60\u597d"
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "# Hugging Face Inference Providers Setup Wizard\n\n---\n\nWelcome! This wizard will help you configure:\n\n1. Your Hugging Face token (required for API access)\n2. Your default inference model\n3. Whether to connect to the Hugging Face MCP server on startup\n\nType `go` to begin, or `skip` to use slash commands instead.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2260413.706035208, \"end_time\": 2260413.707088541, \"duration_ms\": 1.05}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 2, \"output_tokens\": 312, \"total_tokens\": 314, \"timestamp\": 1776596339.866953, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 314, \"effective_input_tokens\": 2, \"display_input_tokens\": 2}, \"raw_usage\": {\"input_chars\": 2, \"output_chars\": 312, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 1, \"cumulative_input_tokens\": 2, \"cumulative_output_tokens\": 312, \"cumulative_billing_tokens\": 314, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 314, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.0314, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 2}}"
+          }
+        ]
+      },
+      "is_template": false
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "go"
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "## Step 1 - Hugging Face Token Setup\n\nYour Hugging Face token is not configured.\n\nSet it using one of these methods:\n\n**Option A** - Run `hf auth login`. In Toad, type `$hf auth login`\n\n**Option B** - Set environment variable:\n    `export HF_TOKEN=hf_YOUR_TOKEN` and restart Toad\n\n**Option C** - Add to config file `/Users/liliang/.config/hf-inference/hf.config.yaml`:\n\n```yaml\nhf:\n    api_key: hf_your_token_here\n```\n\nCreate a `READ` or `WRITE` token at: https://huggingface.co/settings/tokens\n\n---\n\nType `check` after setting your token to continue.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2260484.294841583, \"end_time\": 2260484.309203125, \"duration_ms\": 14.36}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 2, \"output_tokens\": 552, \"total_tokens\": 554, \"timestamp\": 1776596410.467637, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 554, \"effective_input_tokens\": 2, \"display_input_tokens\": 2}, \"raw_usage\": {\"input_chars\": 2, \"output_chars\": 552, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 2, \"cumulative_input_tokens\": 4, \"cumulative_output_tokens\": 864, \"cumulative_billing_tokens\": 868, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 554, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.055400000000000005, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 4}}"
+          }
+        ]
+      },
+      "is_template": false
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "A"
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "## Step 1 - Hugging Face Token Setup\n\nYour Hugging Face token is not configured.\n\nSet it using one of these methods:\n\n**Option A** - Run `hf auth login`. In Toad, type `$hf auth login`\n\n**Option B** - Set environment variable:\n    `export HF_TOKEN=hf_YOUR_TOKEN` and restart Toad\n\n**Option C** - Add to config file `/Users/liliang/.config/hf-inference/hf.config.yaml`:\n\n```yaml\nhf:\n    api_key: hf_your_token_here\n```\n\nCreate a `READ` or `WRITE` token at: https://huggingface.co/settings/tokens\n\n---\n\nType `check` after setting your token to continue.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2260541.886380541, \"end_time\": 2260541.887901166, \"duration_ms\": 1.52}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 1, \"output_tokens\": 552, \"total_tokens\": 553, \"timestamp\": 1776596468.044945, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 553, \"effective_input_tokens\": 1, \"display_input_tokens\": 1}, \"raw_usage\": {\"input_chars\": 1, \"output_chars\": 552, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 3, \"cumulative_input_tokens\": 5, \"cumulative_output_tokens\": 1416, \"cumulative_billing_tokens\": 1421, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 553, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.0553, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 5}}"
+          }
+        ]
+      },
+      "is_template": false
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "$hf auth login"
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "## Step 1 - Hugging Face Token Setup\n\nYour Hugging Face token is not configured.\n\nSet it using one of these methods:\n\n**Option A** - Run `hf auth login`. In Toad, type `$hf auth login`\n\n**Option B** - Set environment variable:\n    `export HF_TOKEN=hf_YOUR_TOKEN` and restart Toad\n\n**Option C** - Add to config file `/Users/liliang/.config/hf-inference/hf.config.yaml`:\n\n```yaml\nhf:\n    api_key: hf_your_token_here\n```\n\nCreate a `READ` or `WRITE` token at: https://huggingface.co/settings/tokens\n\n---\n\nType `check` after setting your token to continue.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2260558.763298958, \"end_time\": 2260558.765260875, \"duration_ms\": 1.96}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 14, \"output_tokens\": 552, \"total_tokens\": 566, \"timestamp\": 1776596484.922611, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 566, \"effective_input_tokens\": 14, \"display_input_tokens\": 14}, \"raw_usage\": {\"input_chars\": 14, \"output_chars\": 552, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 4, \"cumulative_input_tokens\": 19, \"cumulative_output_tokens\": 1968, \"cumulative_billing_tokens\": 1987, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 566, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.0566, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 19}}"
+          }
+        ]
+      },
+      "is_template": false
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "check"
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "## Step 1 - Hugging Face Token Setup\n\nYour Hugging Face token is not configured.\n\nSet it using one of these methods:\n\n**Option A** - Run `hf auth login`. In Toad, type `$hf auth login`\n\n**Option B** - Set environment variable:\n    `export HF_TOKEN=hf_YOUR_TOKEN` and restart Toad\n\n**Option C** - Add to config file `/Users/liliang/.config/hf-inference/hf.config.yaml`:\n\n```yaml\nhf:\n    api_key: hf_your_token_here\n```\n\nCreate a `READ` or `WRITE` token at: https://huggingface.co/settings/tokens\n\n---\n\nType `check` after setting your token to continue.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2260568.879580375, \"end_time\": 2260568.898266958, \"duration_ms\": 18.69}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 5, \"output_tokens\": 552, \"total_tokens\": 557, \"timestamp\": 1776596495.054259, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 557, \"effective_input_tokens\": 5, \"display_input_tokens\": 5}, \"raw_usage\": {\"input_chars\": 5, \"output_chars\": 552, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 5, \"cumulative_input_tokens\": 24, \"cumulative_output_tokens\": 2520, \"cumulative_billing_tokens\": 2544, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 557, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.0557, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 24}}"
+          }
+        ]
+      },
+      "is_template": false
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "hf auth login"
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "## Step 1 - Hugging Face Token Setup\n\nYour Hugging Face token is not configured.\n\nSet it using one of these methods:\n\n**Option A** - Run `hf auth login`. In Toad, type `$hf auth login`\n\n**Option B** - Set environment variable:\n    `export HF_TOKEN=hf_YOUR_TOKEN` and restart Toad\n\n**Option C** - Add to config file `/Users/liliang/.config/hf-inference/hf.config.yaml`:\n\n```yaml\nhf:\n    api_key: hf_your_token_here\n```\n\nCreate a `READ` or `WRITE` token at: https://huggingface.co/settings/tokens\n\n---\n\nType `check` after setting your token to continue.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2260610.149161541, \"end_time\": 2260610.151574291, \"duration_ms\": 2.41}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 13, \"output_tokens\": 552, \"total_tokens\": 565, \"timestamp\": 1776596536.307774, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 565, \"effective_input_tokens\": 13, \"display_input_tokens\": 13}, \"raw_usage\": {\"input_chars\": 13, \"output_chars\": 552, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 6, \"cumulative_input_tokens\": 37, \"cumulative_output_tokens\": 3072, \"cumulative_billing_tokens\": 3109, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 565, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.056499999999999995, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 37}}"
+          }
+        ]
+      },
+      "is_template": false
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Set HF_DEBUG=1 as environment variable for full traceback."
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "## Step 1 - Hugging Face Token Setup\n\nYour Hugging Face token is not configured.\n\nSet it using one of these methods:\n\n**Option A** - Run `hf auth login`. In Toad, type `$hf auth login`\n\n**Option B** - Set environment variable:\n    `export HF_TOKEN=hf_YOUR_TOKEN` and restart Toad\n\n**Option C** - Add to config file `/Users/liliang/.config/hf-inference/hf.config.yaml`:\n\n```yaml\nhf:\n    api_key: hf_your_token_here\n```\n\nCreate a `READ` or `WRITE` token at: https://huggingface.co/settings/tokens\n\n---\n\nType `check` after setting your token to continue.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2261212.747085875, \"end_time\": 2261212.7515445, \"duration_ms\": 4.46}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 58, \"output_tokens\": 552, \"total_tokens\": 610, \"timestamp\": 1776597138.897544, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 610, \"effective_input_tokens\": 58, \"display_input_tokens\": 58}, \"raw_usage\": {\"input_chars\": 58, \"output_chars\": 552, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 7, \"cumulative_input_tokens\": 95, \"cumulative_output_tokens\": 3624, \"cumulative_billing_tokens\": 3719, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 610, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.061, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 95}}"
+          }
+        ]
+      },
+      "is_template": false
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "nihao"
+        }
+      ],
+      "is_template": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "## Step 1 - Hugging Face Token Setup\n\nYour Hugging Face token is not configured.\n\nSet it using one of these methods:\n\n**Option A** - Run `hf auth login`. In Toad, type `$hf auth login`\n\n**Option B** - Set environment variable:\n    `export HF_TOKEN=hf_YOUR_TOKEN` and restart Toad\n\n**Option C** - Add to config file `/Users/liliang/.config/hf-inference/hf.config.yaml`:\n\n```yaml\nhf:\n    api_key: hf_your_token_here\n```\n\nCreate a `READ` or `WRITE` token at: https://huggingface.co/settings/tokens\n\n---\n\nType `check` after setting your token to continue.\n"
+        }
+      ],
+      "channels": {
+        "fast-agent-timing": [
+          {
+            "type": "text",
+            "text": "{\"start_time\": 2261278.808279458, \"end_time\": 2261278.81173625, \"duration_ms\": 3.46}"
+          }
+        ],
+        "fast-agent-usage": [
+          {
+            "type": "text",
+            "text": "{\"turn\": {\"provider\": \"fast-agent\", \"model\": \"wizard-setup\", \"input_tokens\": 5, \"output_tokens\": 552, \"total_tokens\": 557, \"timestamp\": 1776597204.955991, \"cache_usage\": {\"cache_read_tokens\": 0, \"cache_write_tokens\": 0, \"cache_hit_tokens\": 0, \"total_cache_tokens\": 0, \"has_cache_activity\": false}, \"tool_use_tokens\": 0, \"reasoning_tokens\": 0, \"tool_calls\": 0, \"current_context_tokens\": 557, \"effective_input_tokens\": 5, \"display_input_tokens\": 5}, \"raw_usage\": {\"input_chars\": 5, \"output_chars\": 552, \"model_type\": \"wizard-setup\", \"tool_calls\": 0, \"delay_seconds\": 0.0}, \"summary\": {\"model\": \"wizard-setup\", \"turn_count\": 8, \"cumulative_input_tokens\": 100, \"cumulative_output_tokens\": 4176, \"cumulative_billing_tokens\": 4276, \"cumulative_tool_use_tokens\": 0, \"cumulative_reasoning_tokens\": 0, \"cumulative_tool_calls\": 0, \"current_context_tokens\": 557, \"context_window_size\": 1000000, \"context_usage_percentage\": 0.0557, \"cumulative_cache_read_tokens\": 0, \"cumulative_cache_write_tokens\": 0, \"cumulative_cache_hit_tokens\": 0, \"cache_hit_rate_percent\": 0.0, \"cumulative_effective_input_tokens\": 100}}"
+          }
+        ]
+      },
+      "is_template": false
+    }
+  ]
+}

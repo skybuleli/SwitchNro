@@ -2,9 +2,17 @@
   <PropertyGroup>
     <RootNamespace>SwitchNro.UI</RootNamespace>
     <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>osx-arm64</RuntimeIdentifier>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+
+  <!-- 自动重签名以获取 HVF 权限 -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
+    <Message Importance="High" Text="🔐 为 $(TargetPath) 签名以获取 HVF 特权..." />
+    <Exec Command="codesign --entitlements ../SwitchNro.Headless/Entitlements.plist -f -s - &quot;$(TargetPath)&quot;" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.*" />

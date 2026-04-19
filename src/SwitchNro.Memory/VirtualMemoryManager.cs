@@ -11,9 +11,13 @@ namespace SwitchNro.Memory;
 /// </summary>
 public sealed class VirtualMemoryManager : IDisposable
 {
-    private const int PageSize = 0x1000; // 4KB
+    private const int PageSize = 0x1000; // 4KB (虚拟页粒度，保持与 Horizon OS 一致)
     private const int PageBits = 12;
     private const ulong PageMask = PageSize - 1;
+
+    // Apple Silicon 16KB 块大小（物理内存分配粒度，HVF 映射粒度）
+    private const ulong ArmBlockSize = 0x4000;
+    private const ulong ArmBlockMask = ArmBlockSize - 1;
 
     // 两级页表：PGD (11位) → PUD (9位) → PMD (9位) → PTE
     private readonly PageTable _pageTable;
@@ -36,7 +40,7 @@ public sealed class VirtualMemoryManager : IDisposable
     }
 
     /// <summary>将数据映射到虚拟地址空间</summary>
-    public void Map(ulong vaddr, ReadOnlySpan<byte> data, MemoryPermissions perms)
+    public void Map(ulong vaddr, ReadOnlySpan<byte> data, MemoryPermissions perms, MemoryType type = MemoryType.Normal)
     {
         var alignedAddr = AlignDown(vaddr);
         var endAddr = AlignUp(vaddr + (ulong)data.Length);
@@ -46,11 +50,11 @@ public sealed class VirtualMemoryManager : IDisposable
 
         for (ulong addr = alignedAddr; addr < endAddr; addr += PageSize)
         {
-            var page = _physicalAllocator.AllocatePage();
+            var page = _physicalAllocator.AllocatePage(addr);
             if (page == IntPtr.Zero)
                 throw new MemoryAllocationException("物理内存不足，无法分配新页");
 
-            _pageTable.Map(addr, page, effectivePerms);
+            _pageTable.Map(addr, page, effectivePerms, type);
             _tlb.Invalidate(addr);
         }
 
@@ -64,20 +68,21 @@ public sealed class VirtualMemoryManager : IDisposable
     }
 
     /// <summary>映射空内存区域（零填充）</summary>
-    public void MapZero(ulong vaddr, ulong size, MemoryPermissions perms)
+    public void MapZero(ulong vaddr, ulong size, MemoryPermissions perms, MemoryType type = MemoryType.Normal)
     {
         var alignedAddr = AlignDown(vaddr);
         var endAddr = AlignUp(vaddr + size);
 
         for (ulong addr = alignedAddr; addr < endAddr; addr += PageSize)
         {
-            if (_pageTable.IsMapped(addr)) continue;
+            if (_pageTable.IsMapped(addr))
+                throw new MemoryAlreadyMappedException(addr);
 
-            var page = _physicalAllocator.AllocatePage();
+            var page = _physicalAllocator.AllocatePage(addr);
             if (page == IntPtr.Zero)
                 throw new MemoryAllocationException("物理内存不足，无法分配新页");
 
-            _pageTable.Map(addr, page, perms);
+            _pageTable.Map(addr, page, perms, type);
             _tlb.Invalidate(addr);
         }
 
@@ -94,7 +99,7 @@ public sealed class VirtualMemoryManager : IDisposable
         {
             if (_pageTable.TryGetValue(addr, out var page, out _))
             {
-                _physicalAllocator.FreePage(page);
+                _physicalAllocator.FreePage(addr);
                 _pageTable.Unmap(addr);
                 _tlb.Invalidate(addr);
             }
@@ -114,6 +119,75 @@ public sealed class VirtualMemoryManager : IDisposable
             _pageTable.UpdatePermissions(addr, newPerms);
             _tlb.Invalidate(addr);
         }
+    }
+
+    /// <summary>
+    /// 映射别名：将源地址的物理页映射到目标地址（不复制数据，共享物理页）
+    /// 当前 SVC 层使用 Remap（move 语义），此方法保留供未来别名映射场景使用
+    /// </summary>
+    public void MapAlias(ulong srcAddr, ulong dstAddr, ulong size, MemoryPermissions perms)
+    {
+        var alignedSrc = AlignDown(srcAddr);
+        var alignedDst = AlignDown(dstAddr);
+        var endOffset = AlignUp(srcAddr + size) - alignedSrc;
+
+        for (ulong offset = 0; offset < endOffset; offset += PageSize)
+        {
+            if (!_pageTable.TryGetValue(alignedSrc + offset, out var physPage, out _))
+                throw new MemoryAccessException($"MapAlias: 源页未映射 0x{alignedSrc + offset:X16}");
+
+            _pageTable.Map(alignedDst + offset, physPage, perms);
+            _tlb.Invalidate(alignedDst + offset);
+        }
+
+        Logger.Info(nameof(VirtualMemoryManager), $"映射别名 0x{dstAddr:X16} ← 0x{srcAddr:X16} 大小=0x{size:X16} [{perms}]");
+    }
+
+    /// <summary>
+    /// 取消映射别名：仅移除页表映射，不释放底层物理页
+    /// 用于 SVC 0x04 UnmapMemory 的实现
+    /// </summary>
+    public void UnmapAlias(ulong vaddr, ulong size)
+    {
+        var alignedAddr = AlignDown(vaddr);
+        var endAddr = AlignUp(vaddr + size);
+
+        for (ulong addr = alignedAddr; addr < endAddr; addr += PageSize)
+        {
+            // 仅移除映射，不释放物理页（因为物理页仍被源地址引用）
+            _pageTable.Unmap(addr);
+            _tlb.Invalidate(addr);
+        }
+
+        Logger.Info(nameof(VirtualMemoryManager), $"取消映射别名 0x{vaddr:X16} 大小=0x{size:X16}");
+    }
+
+    /// <summary>
+    /// 重映射：将源地址的物理页移动到目标地址并更改权限
+    /// 源地址被取消映射（不释放物理页），目标地址获得物理页和新权限
+    /// 用于 SVC 0x03 MapMemory 的 move 语义实现
+    /// </summary>
+    public void Remap(ulong srcAddr, ulong dstAddr, ulong size, MemoryPermissions dstPerms, MemoryType dstType = MemoryType.Alias)
+    {
+        var alignedSrc = AlignDown(srcAddr);
+        var alignedDst = AlignDown(dstAddr);
+        var endOffset = AlignUp(srcAddr + size) - alignedSrc;
+
+        for (ulong offset = 0; offset < endOffset; offset += PageSize)
+        {
+            if (!_pageTable.TryGetValue(alignedSrc + offset, out var physPage, out _))
+                throw new MemoryAccessException($"Remap: 源页未映射 0x{alignedSrc + offset:X16}");
+
+            // 目标地址获得物理页、新权限和新类型（MapMemory 目标为 Alias）
+            _pageTable.Map(alignedDst + offset, physPage, dstPerms, dstType);
+            _tlb.Invalidate(alignedDst + offset);
+
+            // 源地址取消映射（不释放物理页，因为已移至目标）
+            _pageTable.Unmap(alignedSrc + offset);
+            _tlb.Invalidate(alignedSrc + offset);
+        }
+
+        Logger.Info(nameof(VirtualMemoryManager), $"重映射 0x{srcAddr:X16} → 0x{dstAddr:X16} 大小=0x{size:X16} [{dstPerms}] type={dstType}");
     }
 
     /// <summary>读取虚拟内存</summary>
@@ -194,6 +268,92 @@ public sealed class VirtualMemoryManager : IDisposable
         Write(vaddr, buffer);
     }
 
+    /// <summary>检查虚拟地址是否已映射（高效检查，无异常）</summary>
+    public bool IsMapped(ulong vaddr)
+    {
+        var pageAddr = AlignDown(vaddr);
+        return _pageTable.IsMapped(pageAddr);
+    }
+
+    /// <summary>
+    /// 查询虚拟地址的内存区域信息（用于 SVC 0x05 QueryMemory）
+    /// 从指定地址开始，查找连续的相同类型/权限的页，返回区域信息
+    /// </summary>
+    public MemoryInfo QueryMemoryInfo(ulong queryAddr)
+    {
+        var pageAddr = AlignDown(queryAddr);
+
+        // 未映射的地址：查找下一个已映射页的位置
+        if (!_pageTable.TryGetValue(pageAddr, out _, out var perms, out var type))
+        {
+            // 找到第一个已映射的页
+            ulong nextMapped = FindNextMappedPage(pageAddr + PageSize);
+            return new MemoryInfo
+            {
+                BaseAddress = pageAddr,
+                Size = nextMapped - pageAddr,
+                Type = (uint)MemoryType.Unmapped,
+                Attribute = 0,
+                Permission = 0,
+                IpcRefCount = 0
+            };
+        }
+
+        // 已映射的地址：计算连续相同类型/权限的页的范围
+        ulong regionStart = FindRegionStart(pageAddr, perms, type);
+        ulong regionEnd = FindRegionEnd(pageAddr, perms, type);
+
+        return new MemoryInfo
+        {
+            BaseAddress = regionStart,
+            Size = regionEnd - regionStart,
+            Type = (uint)type,
+            Attribute = 0,
+            Permission = (uint)perms,
+            IpcRefCount = 0
+        };
+    }
+
+    /// <summary>从指定地址向后查找第一个已映射的页</summary>
+    private ulong FindNextMappedPage(ulong startAddr)
+    {
+        // 限制搜索范围在进程地址空间内（0x0008_0000 ~ 0x3000_0000）
+        const ulong SearchLimit = 0x0000_3000_0000UL;
+        for (ulong addr = startAddr; addr < SearchLimit; addr += PageSize)
+        {
+            if (_pageTable.IsMapped(addr)) return addr;
+        }
+        return SearchLimit;
+    }
+
+    /// <summary>向后查找区域起始地址（连续相同类型/权限的页）</summary>
+    private ulong FindRegionStart(ulong pageAddr, MemoryPermissions perms, MemoryType type)
+    {
+        ulong addr = pageAddr;
+        while (addr >= PageSize)
+        {
+            ulong prev = addr - PageSize;
+            if (!_pageTable.TryGetValue(prev, out _, out var prevPerms, out var prevType)) break;
+            if (prevPerms != perms || prevType != type) break;
+            addr = prev;
+        }
+        return addr;
+    }
+
+    /// <summary>向前查找区域结束地址（连续相同类型/权限的页）</summary>
+    private ulong FindRegionEnd(ulong pageAddr, MemoryPermissions perms, MemoryType type)
+    {
+        const ulong SearchLimit = 0x0000_3000_0000UL;
+        ulong addr = pageAddr + PageSize;
+        while (addr < SearchLimit)
+        {
+            if (!_pageTable.TryGetValue(addr, out _, out var nextPerms, out var nextType)) break;
+            if (nextPerms != perms || nextType != type) break;
+            addr += PageSize;
+        }
+        return addr;
+    }
+
     /// <summary>获取指针（用于 Hypervisor 直接映射）</summary>
     public IntPtr GetPhysicalAddress(ulong vaddr)
     {
@@ -207,6 +367,28 @@ public sealed class VirtualMemoryManager : IDisposable
         }
 
         return IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// 获取 16KB 块的 host 基地址和块对齐的 GPA（用于 HVF 映射）
+    /// Apple Silicon 要求 hv_vm_map 的 uaddr/gpa/size 均 16KB 对齐
+    /// </summary>
+    /// <param name="vaddr">任意虚拟地址</param>
+    /// <returns>块对齐的 host 基地址 + 块对齐的 GPA，或 (Zero, 0) 如果块不存在</returns>
+    public (IntPtr hostBase, ulong blockGpa) GetHvfBlockInfo(ulong vaddr)
+    {
+        ulong blockAddr = vaddr & ~ArmBlockMask;
+        var hostBase = _physicalAllocator.GetBlockBase(blockAddr);
+        return (hostBase, blockAddr);
+    }
+
+    /// <summary>
+    /// 检查指定 16KB 块是否已分配（用于 HVF 映射判断）
+    /// </summary>
+    public bool IsHvfBlockAllocated(ulong vaddr)
+    {
+        ulong blockAddr = vaddr & ~ArmBlockMask;
+        return _physicalAllocator.IsBlockAllocated(blockAddr);
     }
 
     /// <summary>处理缺页中断</summary>
@@ -230,7 +412,7 @@ public sealed class VirtualMemoryManager : IDisposable
             throw new MemoryAllocationException("常驻内存超出限制");
         }
 
-        var newPage = _physicalAllocator.AllocatePage();
+        var newPage = _physicalAllocator.AllocatePage(pageAddr);
         if (newPage == IntPtr.Zero)
             throw new MemoryAllocationException("物理内存不足");
 
@@ -260,4 +442,17 @@ public sealed class MemoryAccessException : Exception
 public sealed class MemoryAllocationException : Exception
 {
     public MemoryAllocationException(string message) : base(message) { }
+}
+
+/// <summary>内存已映射异常 — 尝试映射的页面已被占用</summary>
+public sealed class MemoryAlreadyMappedException : Exception
+{
+    /// <summary>冲突的虚拟地址</summary>
+    public ulong Address { get; }
+
+    public MemoryAlreadyMappedException(ulong address)
+        : base($"虚拟地址 0x{address:X16} 已经被映射")
+    {
+        Address = address;
+    }
 }

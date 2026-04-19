@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>SwitchNro.Headless</RootNamespace>
+    <AssemblyName>SwitchNro.Headless</AssemblyName>
+    <!-- macOS HVF 权利文件：构建后 ad-hoc 签名时使用 -->
+    <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
+    <ProjectReference Include="..\SwitchNro.Cpu\SwitchNro.Cpu.csproj" />
+    <ProjectReference Include="..\SwitchNro.Memory\SwitchNro.Memory.csproj" />
+    <ProjectReference Include="..\SwitchNro.NroLoader\SwitchNro.NroLoader.csproj" />
+    <ProjectReference Include="..\SwitchNro.Horizon\SwitchNro.Horizon.csproj" />
+    <ProjectReference Include="..\SwitchNro.HLE\SwitchNro.HLE.csproj" />
+  </ItemGroup>
+
+  <!-- ──────────────────── macOS HVF 权利签名 ──────────────────── -->
+  <!-- Hypervisor.framework 要求进程拥有 com.apple.security.hypervisor 权利 -->
+  <!-- .NET 控制台应用不会自动签名，需在构建后手动 codesign -->
+  <Target Name="SignWithHvfEntitlements" AfterTargets="Build"
+          Condition="$(RuntimeIdentifier.StartsWith('osx'))">
+    <PropertyGroup>
+      <_BuiltBinary>$(TargetDir)$(AssemblyName)</_BuiltBinary>
+      <_EntitlementsPath>$(MSBuildThisFileDirectory)$(CodesignEntitlements)</_EntitlementsPath>
+    </PropertyGroup>
+    <Message Importance="High" Text="🔐 Ad-hoc 签名 $(_BuiltBinary) with HVF entitlements" />
+    <Exec Command="codesign --sign - --force --entitlements &quot;$(_EntitlementsPath)&quot; &quot;$(_BuiltBinary)&quot;"
+          Condition="Exists('$(_BuiltBinary)')" />
+  </Target>
+
+</Project>

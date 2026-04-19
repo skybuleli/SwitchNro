@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SwitchNro.Common;
+using SwitchNro.Horizon;
 
 namespace SwitchNro.HLE.Ipc;
 
@@ -27,6 +28,12 @@ public delegate ResultCode ServiceCommand(IpcRequest request, ref IpcResponse re
 public sealed class IpcServiceManager
 {
     private readonly Dictionary<string, IIpcService> _services = new();
+
+    /// <summary>
+    /// 当前进程的句柄表（由外部在进程创建后设置）
+    /// SmService.GetService 通过此句柄表创建真实的 KClientSession 内核对象句柄
+    /// </summary>
+    public HandleTable? HandleTable { get; set; }
 
     /// <summary>注册服务实现</summary>
     public void RegisterService<T>(T implementation) where T : IIpcService

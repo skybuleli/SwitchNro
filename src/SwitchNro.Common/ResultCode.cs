@@ -15,6 +15,9 @@ public readonly struct ResultCode : IEquatable<ResultCode>
         _value = (module << 9) | description;
     }
 
+    /// <summary>原始数值（用于序列化到 IPC 缓冲区）</summary>
+    public int Value => _value;
+
     public int Module => (_value >> 9) & 0x1FF;
     public int Description => _value & 0x1FFF;
     public bool IsSuccess => _value == 0;
@@ -60,13 +63,27 @@ public enum TKernelResult
 {
     Success = 0,
     SessionClosed = 16,
+    TimedOut = 22,
     InvalidState = 42,
-    NotImplemented = 518,
-    NotSupported = 519,
+    // WaitSynchronization 专用错误码
+    WaitSyncInvalidHandle = 57,
+    WaitSyncCancelled = 59, // SVC 0x0E CancelSynchronization 设置取消标志后，WaitSynchronization 返回此值
+    WaitSyncTooManyHandles = 114,
+    // ArbitrateLock / WaitProcessWideKeyAtomic 专用错误码
+    ConcurrentConflict = 103,
+    InvalidCount = 112,
+    // CreateThread 专用错误码
+    InvalidPriority = 101,
+    InvalidProcessorId = 102,
+    // SetThreadActivity 专用错误码
+    InvalidThreadActivity = 100,
+    // 通用错误码
     InvalidHandle = 602,
     InvalidSize = 604,
     InvalidAddress = 605,
     OutOfResource = 614,
     OutOfMemory = 615,
     LimitReached = 617,
+    NotImplemented = 518,
+    NotSupported = 519,
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using SwitchNro.Common;
 using SwitchNro.Common.Logging;
 using SwitchNro.HLE.Ipc;
+using SwitchNro.Memory;
 
 namespace SwitchNro.HLE.Services;
 
@@ -12,7 +13,8 @@ namespace SwitchNro.HLE.Services;
 /// </summary>
 public sealed class ViService : IIpcService
 {
-    public string PortName => "vi:";
+    private readonly string _portName;
+    public string PortName => _portName;
 
     public IReadOnlyDictionary<uint, ServiceCommand> CommandTable => _commandTable;
 
@@ -21,25 +23,69 @@ public sealed class ViService : IIpcService
     /// <summary>显示画面更新事件（UI 层监听此事件以获取新的帧）</summary>
     public event Action<int, int, ReadOnlySpan<byte>>? FramePresented;
 
-    public ViService()
+    public ViService(string portName = "vi:m")
     {
+        _portName = portName;
         _commandTable = new Dictionary<uint, ServiceCommand>
         {
-            [0] = GetDisplayService,     // 获取显示服务
-            [1] = GetDisplayService2,    // 获取显示服务 (版本 2)
+            [100] = GetDisplayService,   // GetDisplayService
+            [101] = GetDisplayService,   // GetDisplayService (Version 2)
+            
+            // 以下是 IDisplayService 的命令 (通常通过 OpenDisplayService 获得)
+            // 简化：直接在主服务中响应，因为目前 IPC 框架暂不支持多层 Session 代理
+            [1010] = OpenDisplay,        // OpenDisplay
+            [2010] = CreateLayer,        // CreateLayer
+            [2020] = OpenLayer,          // OpenLayer
         };
     }
 
     private ResultCode GetDisplayService(IpcRequest request, ref IpcResponse response)
     {
-        Logger.Info(nameof(ViService), "vi: GetDisplayService");
+        Logger.Info(nameof(ViService), $"{_portName}: GetDisplayService");
         return ResultCode.Success;
     }
 
-    private ResultCode GetDisplayService2(IpcRequest request, ref IpcResponse response)
+    private ResultCode OpenDisplay(IpcRequest request, ref IpcResponse response)
     {
-        Logger.Info(nameof(ViService), "vi: GetDisplayService2");
+        Logger.Info(nameof(ViService), $"{_portName}: OpenDisplay");
+        // 返回显示器名称 "Default" (8 字节)
+        byte[] name = System.Text.Encoding.ASCII.GetBytes("Default\0");
+        response.Data.AddRange(name);
         return ResultCode.Success;
+    }
+
+    private ResultCode CreateLayer(IpcRequest request, ref IpcResponse response)
+    {
+        Logger.Info(nameof(ViService), $"{_portName}: CreateLayer");
+        // 返回 LayerId (u64)
+        response.Data.AddRange(BitConverter.GetBytes(1UL));
+        return ResultCode.Success;
+    }
+
+    private ResultCode OpenLayer(IpcRequest request, ref IpcResponse response)
+    {
+        Logger.Info(nameof(ViService), $"{_portName}: OpenLayer");
+        // 返回 NativeWindow 句柄大小 (u64)
+        response.Data.AddRange(BitConverter.GetBytes(0x100UL)); 
+        return ResultCode.Success;
+    }
+
+    /// <summary>
+    /// 模拟渲染逻辑：直接接收 Guest 内存中的 Framebuffer
+    /// </summary>
+    public void RequestFrameUpdate(VirtualMemoryManager memory, ulong vaddr, int width, int height)
+    {
+        try
+        {
+            int size = width * height * 4; // RGBA8888
+            byte[] frame = new byte[size];
+            memory.Read(vaddr, frame);
+            FramePresented?.Invoke(width, height, frame);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(nameof(ViService), $"渲染帧读取失败: {ex.Message}");
+        }
     }
 
     /// <summary>由图形后端调用：提交新帧到显示服务</summary>

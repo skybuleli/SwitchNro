@@ -94,3 +94,4 @@ $RECYCLE.BIN/
 *.bak
 *.orig
 *.rej
+.alma-snapshots

@@ -7,5 +7,6 @@
     <InternalsVisibleTo Include="SwitchNro.Tests" />
     <ProjectReference Include="..\SwitchNro.Common\SwitchNro.Common.csproj" />
     <ProjectReference Include="..\SwitchNro.Horizon\SwitchNro.Horizon.csproj" />
+    <ProjectReference Include="..\SwitchNro.Memory\SwitchNro.Memory.csproj" />
   </ItemGroup>
 </Project>

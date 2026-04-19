@@ -1,0 +1,11 @@
+{
+  "title": "Hello Colours!",
+  "author": "Frankie A.",
+  "category": "_misc",
+  "version": "1.0.1",
+  "url": "https://github.com/OkiStuff/hello_colours",
+  "license": "The Unlicense",
+  "description": " Quick Application to test your NX.",
+  "details": "Hello Colours is an SDL Application that lets you cycle between 11 colours to test your Homebrew environment.\\n\\nPress (b) to cycle between colours\\nPress (+) to exit",
+  "changelog": ""
+}

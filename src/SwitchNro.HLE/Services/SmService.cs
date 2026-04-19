@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using SwitchNro.Common;
 using SwitchNro.Common.Logging;
 using SwitchNro.HLE.Ipc;
+using SwitchNro.Horizon;
 
 namespace SwitchNro.HLE.Services;
 
@@ -43,8 +44,13 @@ public sealed class SmService : IIpcService
     /// <summary>命令 1: GetService — 通过服务名称获取服务句柄</summary>
     private ResultCode GetService(IpcRequest request, ref IpcResponse response)
     {
-        // 从请求数据中读取服务名称（8 字节，null-terminated）
-        var serviceName = System.Text.Encoding.ASCII.GetString(request.Data).TrimEnd('\0');
+        // 从请求数据中读取服务名称
+        var serviceName = IpcMessageParser.ReadServiceName(request.Data);
+        if (string.IsNullOrEmpty(serviceName))
+        {
+            // 兼容旧格式：直接从 Data 解码 ASCII
+            serviceName = System.Text.Encoding.ASCII.GetString(request.Data).TrimEnd('\0');
+        }
         Logger.Info(nameof(SmService), $"请求服务: {serviceName}");
 
         var service = _serviceManager.GetService(serviceName);
@@ -54,8 +60,21 @@ public sealed class SmService : IIpcService
             return new ResultCode(10, 0x640); // Service not registered
         }
 
-        // 返回服务会话句柄
-        response.CopyHandles.Add(GenerateHandle(serviceName));
+        // 优先使用 HandleTable 直接创建真实的 KClientSession 内核对象句柄
+        if (_serviceManager.HandleTable != null)
+        {
+            var session = new KClientSession(serviceName);
+            int handle = _serviceManager.HandleTable.CreateHandle(session);
+            response.CopyHandles.Add(handle);
+            Logger.Debug(nameof(SmService), $"sm:GetService \"{serviceName}\" → 句柄 0x{handle:X8}");
+        }
+        else
+        {
+            Logger.Warning(nameof(SmService),
+                $"sm:GetService \"{serviceName}\": HandleTable 未设置，无法创建真实句柄");
+            return new ResultCode(10, 0x641); // Kernel error: handle allocation failed
+        }
+
         return ResultCode.Success;
     }
 
@@ -67,10 +86,6 @@ public sealed class SmService : IIpcService
         // 通常 NRO 不会注册服务，但保留接口
         return ResultCode.Success;
     }
-
-    private static int _nextHandle = 0x100;
-    private static int GenerateHandle(string serviceName) =>
-        Interlocked.Increment(ref _nextHandle);
 
     public void Dispose() { }
 }

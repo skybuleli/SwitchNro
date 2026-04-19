@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using SwitchNro.Common;
 using SwitchNro.Common.Logging;
 using SwitchNro.HLE.Ipc;
+using SwitchNro.Horizon;
 
 namespace SwitchNro.HLE.Services;
 
@@ -13,7 +14,9 @@ namespace SwitchNro.HLE.Services;
 /// </summary>
 public sealed class NvService : IIpcService
 {
-    public string PortName => "nvdrv:a";
+    private readonly string _portName;
+    private readonly IpcServiceManager? _serviceManager;
+    public string PortName => _portName;
 
     public IReadOnlyDictionary<uint, ServiceCommand> CommandTable => _commandTable;
 
@@ -23,8 +26,10 @@ public sealed class NvService : IIpcService
     private readonly Dictionary<int, string> _fdTable = new();
     private int _nextFd = 0x10;
 
-    public NvService()
+    public NvService(string portName = "nvdrv:a", IpcServiceManager? serviceManager = null)
     {
+        _portName = portName;
+        _serviceManager = serviceManager;
         _commandTable = new Dictionary<uint, ServiceCommand>
         {
             [0] = Open,                    // 打开 NV 设备
@@ -85,8 +90,17 @@ public sealed class NvService : IIpcService
     private ResultCode QueryEvent(IpcRequest request, ref IpcResponse response)
     {
         Logger.Debug(nameof(NvService), "nvdrv: QueryEvent");
-        // 返回一个虚拟事件句柄
-        response.CopyHandles.Add(0x200);
+        // 通过 HandleTable 创建真实 KReadableEvent 句柄
+        if (_serviceManager?.HandleTable != null)
+        {
+            int handle = _serviceManager.HandleTable.CreateHandle(new KReadableEvent());
+            response.CopyHandles.Add(handle);
+        }
+        else
+        {
+            Logger.Warning(nameof(NvService), "QueryEvent: HandleTable 未设置，返回虚拟句柄");
+            response.CopyHandles.Add(0x200);
+        }
         return ResultCode.Success;
     }
 
@@ -169,8 +183,12 @@ public sealed class NvService : IIpcService
 
     private static ResultCode HandleUnknownIoctl(uint cmd, ref IpcResponse response)
     {
-        Logger.Warning(nameof(NvService), $"  未知 NV ioctl 类别: 0x{cmd:X8}");
-        return ResultCode.SfResult(3); // Not supported
+        Logger.Info(nameof(NvService), $"  NV ioctl (Stub Success): 0x{cmd:X8}");
+        
+        // 为 MVP 简化：对大部分 ioctl 返回成功且填充全零数据（如果需要）
+        // 很多 libnx 特性探测只要不返回错误码就会继续
+        response.Data.AddRange(new byte[64]); // 填充一些空数据防止溢出
+        return ResultCode.Success;
     }
 
     public void Dispose() { }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using SwitchNro.Common;
 using SwitchNro.Common.Logging;
 using SwitchNro.HLE.Ipc;
+using SwitchNro.Horizon;
 
 namespace SwitchNro.HLE.Services;
 
@@ -13,6 +14,7 @@ namespace SwitchNro.HLE.Services;
 /// </summary>
 public sealed class AmService : IIpcService
 {
+    private readonly IpcServiceManager? _serviceManager;
     public string PortName => "appletOE";
 
     public IReadOnlyDictionary<uint, ServiceCommand> CommandTable => _commandTable;
@@ -25,12 +27,13 @@ public sealed class AmService : IIpcService
     /// <summary>当前操作模式</summary>
     private OperationMode _operationMode = OperationMode.Handheld;
 
-    public AmService()
+    public AmService(IpcServiceManager? serviceManager = null)
     {
+        _serviceManager = serviceManager;
         _commandTable = new Dictionary<uint, ServiceCommand>
         {
-            [0]  = OpenDefaultApplet,          // 打开默认 Applet
-            [1]  = SetScreenShotPermission,     // 设置截图权限
+            [0]  = OpenAppletProxy,            // OpenLibraryAppletProxy / OpenApplicationProxy
+            [1]  = GetMainAppletInFocusEvent,  // 获取焦点事件
             [10] = SetOperationModeChangedNotification,
             [20] = InitializeApplicationCopyright,
             [22] = SetApplicationCopyrightImage,
@@ -45,17 +48,26 @@ public sealed class AmService : IIpcService
         };
     }
 
-    /// <summary>命令 0: OpenDefaultApplet — 获取默认 Applet 代理</summary>
-    private ResultCode OpenDefaultApplet(IpcRequest request, ref IpcResponse response)
+    private ResultCode OpenAppletProxy(IpcRequest request, ref IpcResponse response)
     {
-        Logger.Info(nameof(AmService), "appletOE: OpenDefaultApplet");
+        Logger.Info(nameof(AmService), $"{PortName}: OpenAppletProxy");
         return ResultCode.Success;
     }
 
-    /// <summary>命令 1: SetScreenShotPermission — 设置截图权限</summary>
-    private ResultCode SetScreenShotPermission(IpcRequest request, ref IpcResponse response)
+    private ResultCode GetMainAppletInFocusEvent(IpcRequest request, ref IpcResponse response)
     {
-        Logger.Debug(nameof(AmService), "appletOE: SetScreenShotPermission");
+        Logger.Info(nameof(AmService), $"{PortName}: GetMainAppletInFocusEvent");
+        // 通过 HandleTable 创建真实 KReadableEvent 句柄
+        if (_serviceManager?.HandleTable != null)
+        {
+            int handle = _serviceManager.HandleTable.CreateHandle(new KReadableEvent());
+            response.CopyHandles.Add(handle);
+        }
+        else
+        {
+            Logger.Warning(nameof(AmService), "GetMainAppletInFocusEvent: HandleTable 未设置，返回虚拟句柄");
+            response.CopyHandles.Add(0x100);
+        }
         return ResultCode.Success;
     }
 

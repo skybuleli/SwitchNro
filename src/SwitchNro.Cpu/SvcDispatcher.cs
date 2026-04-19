@@ -73,8 +73,9 @@ public sealed class SvcDispatcher
         _svcNames[0x11] = "WaitProcessWideKeyAtomic";
         _svcNames[0x12] = "SignalProcessWideKey";
         _svcNames[0x13] = "GetSystemTick";
-        _svcNames[0x14] = "ConnectToNamedPort";
+        _svcNames[0x14] = "CreateSharedMemory";
         _svcNames[0x15] = "ExceptionOccurred";
+        _svcNames[0x19] = "CloseHandle";
         _svcNames[0x1F] = "ConnectToNamedPort";
         _svcNames[0x21] = "SendSyncRequest";
         _svcNames[0x22] = "SendSyncRequestWithUserBuffer";
@@ -85,15 +86,19 @@ public sealed class SvcDispatcher
         _svcNames[0x29] = "GetInfo";
         _svcNames[0x2B] = "FlushEntireDataCache";
         _svcNames[0x2C] = "FlushDataCache";
+        _svcNames[0x34] = "CreateThread";
         _svcNames[0x35] = "MapPhysicalMemory";
         _svcNames[0x36] = "UnmapPhysicalMemory";
+        _svcNames[0x4C] = "StartThread";
         _svcNames[0x3C] = "GetDebugFutureThreadInfo";
         _svcNames[0x3D] = "GetLastThreadInfo";
         _svcNames[0x3E] = "GetResourceLimitLimitValue";
         _svcNames[0x3F] = "GetResourceLimitCurrentValue";
         _svcNames[0x40] = "SetThreadActivity";
         _svcNames[0x41] = "GetThreadContext3";
-        _svcNames[0x44] = "WaitForAddress";
+        _svcNames[0x42] = "WaitForAddress";
+        _svcNames[0x43] = "ReplyAndReceive";
+        _svcNames[0x44] = "ReplyAndReceiveWithUserBuffer";
         _svcNames[0x45] = "SignalToAddress";
         _svcNames[0x50] = "MapPhysicalMemoryUnsafe";
         _svcNames[0x51] = "UnmapPhysicalMemoryUnsafe";
@@ -126,4 +131,7 @@ public readonly struct SvcResult
 
     /// <summary>附加返回值（X1）</summary>
     public ulong ReturnValue1 { get; init; }
+
+    /// <summary>附加返回值（X2），用于 WaitSynchronization 等返回索引的 SVC</summary>
+    public ulong ReturnValue2 { get; init; }
 }

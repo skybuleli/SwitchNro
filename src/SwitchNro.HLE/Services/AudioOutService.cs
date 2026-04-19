@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using SwitchNro.Common;
 using SwitchNro.Common.Logging;
 using SwitchNro.HLE.Ipc;
+using SwitchNro.Horizon;
 
 namespace SwitchNro.HLE.Services;
 
@@ -13,6 +14,7 @@ namespace SwitchNro.HLE.Services;
 /// </summary>
 public sealed class AudioOutService : IIpcService
 {
+    private readonly IpcServiceManager? _serviceManager;
     public string PortName => "audout:u";
 
     public IReadOnlyDictionary<uint, ServiceCommand> CommandTable => _commandTable;
@@ -25,8 +27,9 @@ public sealed class AudioOutService : IIpcService
     /// <summary>已注册的音频缓冲区数量</summary>
     private int _registeredBufferCount;
 
-    public AudioOutService()
+    public AudioOutService(IpcServiceManager? serviceManager = null)
     {
+        _serviceManager = serviceManager;
         _commandTable = new Dictionary<uint, ServiceCommand>
         {
             [0]  = ListAudioOuts,               // 列出音频输出设备
@@ -70,8 +73,8 @@ public sealed class AudioOutService : IIpcService
         response.Data.AddRange(BitConverter.GetBytes(48000));   // SampleRate
         response.Data.AddRange(BitConverter.GetBytes((ushort)2)); // ChannelCount
         response.Data.AddRange(BitConverter.GetBytes((ushort)1)); // SampleFormat (PCM_INT16)
-        // 返回音频输出句柄
-        response.CopyHandles.Add(0x300);
+        // 通过 HandleTable 创建真实 KClientSession 句柄
+        response.CopyHandles.Add(CreateServiceHandle("audout:u:session"));
         return ResultCode.Success;
     }
 
@@ -91,7 +94,7 @@ public sealed class AudioOutService : IIpcService
         response.Data.AddRange(BitConverter.GetBytes(48000));
         response.Data.AddRange(BitConverter.GetBytes((ushort)2));
         response.Data.AddRange(BitConverter.GetBytes((ushort)1));
-        response.CopyHandles.Add(0x300);
+        response.CopyHandles.Add(CreateServiceHandle("audout:u:session:auto"));
         return ResultCode.Success;
     }
 
@@ -111,7 +114,7 @@ public sealed class AudioOutService : IIpcService
         response.Data.AddRange(BitConverter.GetBytes(48000));
         response.Data.AddRange(BitConverter.GetBytes((ushort)2));
         response.Data.AddRange(BitConverter.GetBytes((ushort)1));
-        response.CopyHandles.Add(0x300);
+        response.CopyHandles.Add(CreateServiceHandle("audout:u:session:wake"));
         return ResultCode.Success;
     }
 
@@ -152,7 +155,8 @@ public sealed class AudioOutService : IIpcService
     private ResultCode RegisterBufferEvent(IpcRequest request, ref IpcResponse response)
     {
         Logger.Debug(nameof(AudioOutService), "audout:u: RegisterBufferEvent");
-        response.CopyHandles.Add(0x400); // 虚拟事件句柄
+        // 通过 HandleTable 创建真实 KReadableEvent 句柄
+        response.CopyHandles.Add(CreateEventHandle());
         return ResultCode.Success;
     }
 
@@ -187,6 +191,28 @@ public sealed class AudioOutService : IIpcService
         _registeredBufferCount -= released;
         response.Data.AddRange(BitConverter.GetBytes(released));
         return ResultCode.Success;
+    }
+
+    /// <summary>通过 HandleTable 创建 KClientSession 句柄</summary>
+    private int CreateServiceHandle(string portName)
+    {
+        if (_serviceManager?.HandleTable != null)
+        {
+            return _serviceManager.HandleTable.CreateHandle(new KClientSession(portName));
+        }
+        Logger.Warning(nameof(AudioOutService), "HandleTable 未设置，返回虚拟句柄");
+        return 0x300;
+    }
+
+    /// <summary>通过 HandleTable 创建 KReadableEvent 句柄</summary>
+    private int CreateEventHandle()
+    {
+        if (_serviceManager?.HandleTable != null)
+        {
+            return _serviceManager.HandleTable.CreateHandle(new KReadableEvent());
+        }
+        Logger.Warning(nameof(AudioOutService), "HandleTable 未设置，返回虚拟事件句柄");
+        return 0x400;
     }
 
     public void Dispose() { }

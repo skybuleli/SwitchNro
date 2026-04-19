@@ -1,9 +1,13 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using SwitchNro.Audio;
 using SwitchNro.Audio.SDL2;
 using SwitchNro.Common;
@@ -32,8 +36,10 @@ public partial class MainWindow : Window, IDisposable
     private InputManager? _inputManager;
     private DebuggerService? _debuggerService;
     private IpcServiceManager? _ipcServiceManager;
+    private IpcBridge? _ipcBridge;
     private Sdl2AudioBackend? _audioBackend;
     private MetalRenderer? _renderer;
+    private WriteableBitmap? _bitmap;
 
     // UI 数据绑定
     private readonly ObservableCollection<string> _svcLogEntries = new();
@@ -46,245 +52,111 @@ public partial class MainWindow : Window, IDisposable
         InitializeComponent();
         InitializeSubsystem();
         SetupUiEvents();
+        SetupRendering();
     }
 
     private void InitializeSubsystem()
     {
-        // 加载配置
         _config = ConfigManager.Load();
-
-        // 创建核心子系统
+        Logger.SetMinimumLevel(LogLevel.Debug); // 开启详细调试
         _memory = new VirtualMemoryManager();
         _svcDispatcher = new SvcDispatcher();
         _nroLoader = new NroLoader.NroLoader(_memory);
         _inputManager = new InputManager();
         _debuggerService = new DebuggerService();
         _ipcServiceManager = new IpcServiceManager();
+        _ipcBridge = new IpcBridge(_ipcServiceManager, _memory);
 
-        // 注册核心 HLE 服务
+        // SmService.GetService 通过 HandleTable 创建真实的 KClientSession 句柄
+        // HandleTable 在 BindProcess 时动态设置（进程创建后才有句柄表）
+
         _ipcServiceManager.RegisterService(new SmService(_ipcServiceManager));
         _ipcServiceManager.RegisterService(new FsService());
-        _ipcServiceManager.RegisterService(new ViService());
+        _ipcServiceManager.RegisterService(new ViService("vi:m"));
+        _ipcServiceManager.RegisterService(new ViService("vi:u"));
+        _ipcServiceManager.RegisterService(new ViService("vi:s"));
         _ipcServiceManager.RegisterService(new HidService());
-
-        // 新增 HLE 服务
-        _ipcServiceManager.RegisterService(new NvService());
+        _ipcServiceManager.RegisterService(new NvService("nvdrv:a", _ipcServiceManager));
+        _ipcServiceManager.RegisterService(new NvService("nvdrv:s", _ipcServiceManager));
+        _ipcServiceManager.RegisterService(new NvService("nvdrv:t", _ipcServiceManager));
         _ipcServiceManager.RegisterService(new NvMemPService());
-        _ipcServiceManager.RegisterService(new AmService());
+        _ipcServiceManager.RegisterService(new AmService(_ipcServiceManager));
         _ipcServiceManager.RegisterService(new AppletAeService());
-        _ipcServiceManager.RegisterService(new TimeService());
-        _ipcServiceManager.RegisterService(new TimeUService());
-        _ipcServiceManager.RegisterService(new SettingsService());
-        _ipcServiceManager.RegisterService(new SetSysService());
-        _ipcServiceManager.RegisterService(new AudioOutService());
-        _ipcServiceManager.RegisterService(new SocketService());
-        _ipcServiceManager.RegisterService(new SocketUService());
 
-        // 创建音频后端
         _audioBackend = new Sdl2AudioBackend();
-        _audioBackend.Initialize(new AudioBackendConfig());
-
-        // 创建图形渲染器
         _renderer = new MetalRenderer();
-        _renderer.Initialize(new RendererCreateInfo());
-
-        // 创建 Horizon 系统
         _horizonSystem = new HorizonSystem(_memory, _svcDispatcher);
 
-        // 进程管理服务（需要在 _horizonSystem 创建之后注册）
-        _ipcServiceManager.RegisterService(new PmDmntService(_horizonSystem));
-        _ipcServiceManager.RegisterService(new PmInfoService(_horizonSystem));
-        _ipcServiceManager.RegisterService(new PmShellService(_horizonSystem));
-        _ipcServiceManager.RegisterService(new PmBmService());
-
-        // 加载器服务
-        _ipcServiceManager.RegisterService(new LdrShelService());
-        _ipcServiceManager.RegisterService(new LdrDmntService(_horizonSystem));
-        _ipcServiceManager.RegisterService(new LdrPmService(_horizonSystem));
-
-        // 日志管理服务
-        var lmLogger = new LmLoggerService();
-        _ipcServiceManager.RegisterService(new LmService(lmLogger));
-        _ipcServiceManager.RegisterService(new LmGetService(lmLogger));
-
-        // ARP Glue 服务
-        var arpRegistry = new ArpRegistry();
-        _ipcServiceManager.RegisterService(new ArpRService(arpRegistry));
-        _ipcServiceManager.RegisterService(new ArpWService(arpRegistry));
-
-        // SSL 服务
-        _ipcServiceManager.RegisterService(new SslService());
-
-        // 网络接口管理服务 (共享 NifmGeneralService)
-        var nifmGeneral = new NifmGeneralService();
-        _ipcServiceManager.RegisterService(new NifmUService(nifmGeneral));
-        _ipcServiceManager.RegisterService(new NifmSService(nifmGeneral));
-        _ipcServiceManager.RegisterService(new NifmAService(nifmGeneral));
-
-        // 账户服务 (共享 AccountState)
-        var accState = new AccountState();
-        _ipcServiceManager.RegisterService(new AccU0Service(accState));
-        _ipcServiceManager.RegisterService(new AccU1Service(accState));
-        _ipcServiceManager.RegisterService(new AccSuService(accState));
-
-        // 家长控制服务 (共享 PctlState)
-        var pctlState = new PctlState();
-        _ipcServiceManager.RegisterService(new PctlSService(pctlState));
-        _ipcServiceManager.RegisterService(new PctlRService(pctlState));
-        _ipcServiceManager.RegisterService(new PctlAService(pctlState));
-
-        // 好友服务 (共享 FriendState)
-        var friendState = new FriendState();
-        _ipcServiceManager.RegisterService(new FriendUService(friendState));
-        _ipcServiceManager.RegisterService(new FriendVService(friendState));
-        _ipcServiceManager.RegisterService(new FriendMService(friendState));
-        _ipcServiceManager.RegisterService(new FriendSService(friendState));
-        _ipcServiceManager.RegisterService(new FriendAService(friendState));
-
-        // 应用管理服务 (共享 NsAppManagerState)
-        var nsState = new NsAppManagerState();
-        _ipcServiceManager.RegisterService(new NsAm2Service(nsState));
-        _ipcServiceManager.RegisterService(new NsAmService(nsState));
-        _ipcServiceManager.RegisterService(new NsAeService(nsState));
-        _ipcServiceManager.RegisterService(new NsSuService());
-        _ipcServiceManager.RegisterService(new NsDevService());
-
-        // BCAT 服务 (共享 BcatState)
-        var bcatState = new BcatState();
-        _ipcServiceManager.RegisterService(new BcatAService(bcatState));
-        _ipcServiceManager.RegisterService(new BcatMService(bcatState));
-        _ipcServiceManager.RegisterService(new BcatUService(bcatState));
-        _ipcServiceManager.RegisterService(new BcatSService(bcatState));
-
-        // News 服务 (共享 NewsState)
-        var newsState = new NewsState();
-        _ipcServiceManager.RegisterService(new NewsAService(newsState));
-        _ipcServiceManager.RegisterService(new NewsCService(newsState));
-        _ipcServiceManager.RegisterService(new NewsMService(newsState));
-        _ipcServiceManager.RegisterService(new NewsPService(newsState));
-        _ipcServiceManager.RegisterService(new NewsVService(newsState));
-
-        // MM 内存监控服务 (共享 MmState)
-        var mmState = new MmState();
-        _ipcServiceManager.RegisterService(new MmUService(mmState));
-        _ipcServiceManager.RegisterService(new MmSvService(mmState));
-
-        // PSC 电源管理服务 (共享 PscState)
-        var pscState = new PscState();
-        _ipcServiceManager.RegisterService(new PscMService(pscState));
-        _ipcServiceManager.RegisterService(new PscCService(pscState));
-
-        // SPL 安全平台服务 (共享 SplState)
-        var splState = new SplState();
-        _ipcServiceManager.RegisterService(new SplGeneralService(splState));
-        _ipcServiceManager.RegisterService(new SplMigService(splState));
-        _ipcServiceManager.RegisterService(new SplFsService(splState));
-        _ipcServiceManager.RegisterService(new SplSslService(splState));
-        _ipcServiceManager.RegisterService(new SplEsService(splState));
-
-        // Fatal 致命错误服务 (共享 FatalState) — NRO 启动第一站
-        var fatalState = new FatalState();
-        _ipcServiceManager.RegisterService(new FatalUService(fatalState));
-        _ipcServiceManager.RegisterService(new FatalPService(fatalState));
-
-        // APM 性能管理服务 (共享 ApmState) — appletInit 隐式依赖
-        var apmState = new ApmState();
-        _ipcServiceManager.RegisterService(new ApmService(apmState));
-        _ipcServiceManager.RegisterService(new ApmPService(apmState));
-        _ipcServiceManager.RegisterService(new ApmSysService(apmState));
-
-        // RO 可重定位对象服务 (共享 RoState) — NRO 重定位核心
-        var roState = new RoState();
-        _ipcServiceManager.RegisterService(new Ro1Service(roState));
-        _ipcServiceManager.RegisterService(new Ro1aService(roState));
-
-        // Audio Renderer 音频渲染服务 (共享 AudRenState) — 90% homebrew 游戏需要
-        var audRenState = new AudRenState();
-        _ipcServiceManager.RegisterService(new AudRenUService(audRenState));
-        _ipcServiceManager.RegisterService(new AudRenU2Service(audRenState));
-
-        // PL 共享字体服务 (共享 PlState) — 文字渲染必须
-        var plState = new PlState();
-        _ipcServiceManager.RegisterService(new PlUService(plState));
-        _ipcServiceManager.RegisterService(new PlSService(plState));
-        _ipcServiceManager.RegisterService(new PlAService(plState));
-
-        // 注册 SVC 处理函数
         RegisterCoreSvcs();
-
-        // 填充服务列表
-        foreach (var service in _ipcServiceManager.GetAllServices())
-        {
-            _serviceEntries.Add($"  {service.PortName}");
-        }
-
-        var serviceList = this.FindControl<ListBox>("ServiceList");
-        if (serviceList != null) serviceList.ItemsSource = _serviceEntries;
-
-        var svcLogList = this.FindControl<ListBox>("SvcLogList");
-        if (svcLogList != null) svcLogList.ItemsSource = _svcLogEntries;
-
         Logger.Info(nameof(MainWindow), "所有子系统初始化完成");
+    }
+
+    private void SetupRendering()
+    {
+        var service = _ipcServiceManager?.GetService("vi:m");
+        if (service is ViService viService)
+        {
+            viService.FramePresented += OnFramePresented;
+        }
+    }
+
+    private void OnFramePresented(int width, int height, ReadOnlySpan<byte> frameData)
+    {
+        // Span 不能直接在 lambda 中捕获，必须先转为普通数组
+        byte[] dataCopy = frameData.ToArray();
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (_bitmap == null || _bitmap.PixelSize.Width != width || _bitmap.PixelSize.Height != height)
+            {
+                _bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Premul);
+                var gameView = this.FindControl<Image>("GameView");
+                if (gameView != null) gameView.Source = _bitmap;
+                var placeholder = this.FindControl<TextBlock>("PlaceholderText");
+                if (placeholder != null) placeholder.IsVisible = false;
+            }
+
+            using (var buffer = _bitmap.Lock())
+            {
+                Marshal.Copy(dataCopy, 0, buffer.Address, dataCopy.Length);
+            }
+            this.FindControl<Image>("GameView")?.InvalidateVisual();
+        });
     }
 
     private void RegisterCoreSvcs()
     {
-        // SVC 0x26: OutputDebugString
-        _svcDispatcher?.Register(0x26, svc =>
-        {
-            // 读取调试字符串
-            if (svc.X0 != 0 && _memory != null)
-            {
-                try
-                {
-                    var len = (int)svc.X2;
-                    if (len > 0 && len < 1024)
-                    {
+        _svcDispatcher?.Register(0x26, svc => {
+            if (svc.X0 != 0 && _memory != null) {
+                try {
+                    var len = (int)svc.X1;
+                    if (len > 0 && len < 1024) {
                         var buf = new byte[len];
                         _memory.Read(svc.X0, buf);
                         var msg = System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0');
-                        Logger.Info("Guest", $"DebugString: {msg}");
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                        {
-                            _svcLogEntries.Add($"[Debug] {msg}");
-                            if (_svcLogEntries.Count > 200) _svcLogEntries.RemoveAt(0);
-                        });
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => _svcLogEntries.Add($"[Debug] {msg}"));
                     }
-                }
-                catch { /* 忽略读取失败 */ }
+                } catch {}
             }
             return new SvcResult { ReturnCode = ResultCode.Success };
         });
 
-        // SVC 0x01: SetHeapSize
-        _svcDispatcher?.Register(0x01, svc =>
-        {
-            Logger.Debug(nameof(MainWindow), $"SetHeapSize: 0x{svc.X1:X16}");
-            return new SvcResult { ReturnCode = ResultCode.Success, ReturnValue1 = 0x1000_0000 };
-        });
-
-        // SVC 0x28: GetInfo (部分实现)
-        _svcDispatcher?.Register(0x28, svc =>
-        {
-            var infoType = (int)svc.X2;
-            if (infoType == 0) // 是否允许调用
-                return new SvcResult { ReturnCode = ResultCode.Success, ReturnValue1 = 1 };
-            return new SvcResult { ReturnCode = ResultCode.KernelResult(TKernelResult.NotImplemented) };
-        });
+        _svcDispatcher?.Register(0x01, svc => _horizonSystem!.SetHeapSize(svc));
+        _svcDispatcher?.Register(0x05, svc => _horizonSystem!.QueryMemory(svc));
+        _svcDispatcher?.Register(0x06, svc => _horizonSystem!.ExitProcess(svc));
+        _svcDispatcher?.Register(0x0B, svc => new SvcResult { ReturnCode = ResultCode.Success });
+        _svcDispatcher?.Register(0x13, svc => new SvcResult { ReturnCode = ResultCode.Success, ReturnValue1 = (ulong)DateTimeOffset.UtcNow.Ticks });
+        _svcDispatcher?.Register(0x1F, svc => _ipcBridge!.ConnectToNamedPort(svc));
+        _svcDispatcher?.Register(0x21, svc => _ipcBridge!.SendSyncRequest(svc));
+        _svcDispatcher?.Register(0x22, svc => _ipcBridge!.SendSyncRequestWithUserBuffer(svc));
+        _svcDispatcher?.Register(0x29, svc => _horizonSystem!.GetInfo(svc));
+        _svcDispatcher?.Register(0x19, svc => _horizonSystem!.CloseHandle(svc));
     }
 
     private void SetupUiEvents()
     {
         var openBtn = this.FindControl<Button>("OpenNroButton");
         if (openBtn != null) openBtn.Click += OnOpenNroClick;
-
-        var pauseBtn = this.FindControl<Button>("PauseButton");
-        if (pauseBtn != null) pauseBtn.Click += OnPauseClick;
-
-        var debugBtn = this.FindControl<Button>("DebugButton");
-        if (debugBtn != null) debugBtn.Click += OnDebugClick;
-
-        // 拖放支持
         AddHandler(DragDrop.DropEvent, OnDrop);
     }
 
@@ -292,133 +164,38 @@ public partial class MainWindow : Window, IDisposable
     {
         var topLevel = GetTopLevel(this);
         if (topLevel == null) return;
-
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(
-            new Avalonia.Platform.Storage.FilePickerOpenOptions
-            {
-                Title = "选择 NRO 文件",
-                AllowMultiple = false,
-            });
-
-        if (files.Count > 0)
-        {
-            await LoadAndRunNro(files[0].Path.LocalPath);
-        }
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions { Title = "选择 NRO" });
+        if (files.Count > 0) await LoadAndRunNro(files[0].Path.LocalPath);
     }
 
     private async void OnDrop(object? sender, DragEventArgs e)
     {
-        if (e.Data.Contains(DataFormats.Files))
-        {
-            var files = e.Data.GetFiles();
-            if (files != null)
-            {
-                foreach (var file in files)
-                {
-                    var path = file.Path.LocalPath;
-                    if (path.EndsWith(".nro", StringComparison.OrdinalIgnoreCase))
-                    {
-                        await LoadAndRunNro(path);
-                        break;
-                    }
-                }
-            }
-        }
+        var files = e.Data.GetFiles();
+        if (files != null) foreach (var file in files) if (file.Path.LocalPath.EndsWith(".nro", StringComparison.OrdinalIgnoreCase)) await LoadAndRunNro(file.Path.LocalPath);
     }
 
     private async Task LoadAndRunNro(string filePath)
     {
-        var overlay = this.FindControl<Border>("LoadingOverlay");
-        if (overlay != null) overlay.IsVisible = true;
+        try {
+            // 在加载新 NRO 前，确保旧进程已被释放
+            _horizonSystem?.Dispose();
+            // 重新创建一个空的系统实例，避免旧的 vCPU 残留
+            _horizonSystem = new HorizonSystem(_memory!, _svcDispatcher!);
 
-        var statusText = this.FindControl<TextBlock>("StatusText");
-        if (statusText != null) statusText.Text = $"正在加载: {System.IO.Path.GetFileName(filePath)}";
-
-        try
-        {
-            // 在后台线程加载和运行
-            await Task.Run(() =>
-            {
+            await Task.Run(() => {
                 var nroModule = _nroLoader!.Load(filePath);
-
-                var processInfo = new ProcessInfo
-                {
-                    Name = System.IO.Path.GetFileNameWithoutExtension(filePath),
-                    EntryPoint = nroModule.EntryPoint,
-                };
-
-                var process = _horizonSystem!.CreateProcess(nroModule, processInfo);
+                var process = _horizonSystem!.CreateProcess(nroModule, new ProcessInfo { Name = "App", EntryPoint = nroModule.EntryPoint });
                 _horizonSystem.StartProcess(process);
-
-                // 更新 UI 信息
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    var processInfoText = this.FindControl<TextBlock>("ProcessInfoText");
-                    if (processInfoText != null)
-                        processInfoText.Text = $"PID: {processInfo.ProcessId}\n名称: {processInfo.Name}\n入口: 0x{nroModule.EntryPoint:X16}";
-
-                    var placeholder = this.FindControl<TextBlock>("PlaceholderText");
-                    if (placeholder != null) placeholder.Text = "▶ 正在运行";
-
-                    var regs = this.FindControl<TextBlock>("RegistersText");
-                    if (regs != null) regs.Text = $"PC: 0x{process.Engine.GetPC():X16}";
-
-                    var sp = this.FindControl<TextBlock>("SpText");
-                    if (sp != null) sp.Text = $"SP: 0x{process.Engine.GetSP():X16}";
-
-                    if (statusText != null) statusText.Text = $"运行中 — {processInfo.Name}";
-                });
-
-                // 运行 SVC 分发循环（阻塞）
+                _ipcBridge?.BindProcess(process);
                 _horizonSystem.RunProcess(process);
             });
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(nameof(MainWindow), $"加载 NRO 失败: {ex.Message}");
-            if (statusText != null) statusText.Text = $"错误: {ex.Message}";
-        }
-        finally
-        {
-            if (overlay != null) overlay.IsVisible = false;
-        }
-    }
-
-    private void OnPauseClick(object? sender, RoutedEventArgs e)
-    {
-        _debuggerService?.Pause();
-    }
-
-    private void OnDebugClick(object? sender, RoutedEventArgs e)
-    {
-        // TODO: 打开调试面板
-    }
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        base.OnKeyDown(e);
-        _inputManager?.OnKeyDown(e.Key.ToString());
-    }
-
-    protected override void OnKeyUp(KeyEventArgs e)
-    {
-        base.OnKeyUp(e);
-        _inputManager?.OnKeyUp(e.Key.ToString());
-    }
-
-    protected override void OnClosed(EventArgs e)
-    {
-        Dispose();
-        base.OnClosed(e);
+        } catch (Exception ex) { Logger.Error("UI", ex.Message); }
     }
 
     public void Dispose()
     {
         _horizonSystem?.Dispose();
-        _renderer?.Dispose();
-        _audioBackend?.Dispose();
         _memory?.Dispose();
-        _debuggerService?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

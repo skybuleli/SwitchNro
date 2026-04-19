@@ -1,0 +1,85 @@
+{
+  "schema_version": 2,
+  "session_id": "2604191941-fPwGmf",
+  "created_at": "2026-04-19T19:42:12.105399",
+  "last_activity": "2026-04-19T19:42:12.107473",
+  "metadata": {
+    "title": null,
+    "label": null,
+    "first_user_preview": "hello",
+    "pinned": false,
+    "extras": {
+      "model": "kimi"
+    }
+  },
+  "continuation": {
+    "active_agent": "huggingface",
+    "cwd": "/Users/liliang/switch-nro",
+    "lineage": {
+      "forked_from": null,
+      "acp_session_id": "2604191941-fPwGmf"
+    },
+    "agents": {
+      "huggingface": {
+        "history_file": "history_huggingface.json",
+        "resolved_prompt": "You are a helpful AI Agent powered by Hugging Face inference providers.\n\n\n\n\n{{env}}\n\nThe Hugging Face Hub CLI tool `hf` is available. IMPORTANT: The `hf` command replaces the deprecated `huggingface_cli` command.\n\nUse `hf --help` to view available functions. Note that auth commands are now all under `hf auth` e.g. `hf auth whoami`.\n\nFull documentation can be accessed at `https://huggingface.co/docs/huggingface_hub/package_reference/cli.md` with cURL or the huggingface__doc_fetch tool when available.\n\nMarkdown formatting is supported, and preferred for long responses.\n\n\n\nThe current date is 19 April 2026.\n",
+        "model": "moonshotai/Kimi-K2.5:fireworks-ai",
+        "provider": "hf",
+        "request_settings": {
+          "max_tokens": 16384,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": null,
+          "min_p": null,
+          "presence_penalty": null,
+          "frequency_penalty": null,
+          "repetition_penalty": null,
+          "use_history": true,
+          "parallel_tool_calls": true,
+          "max_iterations": 99,
+          "tool_result_mode": "postprocess",
+          "streaming_timeout": 300.0,
+          "service_tier": null
+        },
+        "card_provenance": [],
+        "attachment_refs": [],
+        "model_overlay_refs": []
+      },
+      "setup": {
+        "history_file": null,
+        "resolved_prompt": "Hugging Face Inference Setup assistant.\n\n# Available Commands\n\nUse these slash commands to configure the agent:\n\n- `/set-model <model>` - Set the default model for inference\n- `/login` - Get instructions for logging in to HuggingFace\n- `/check` - Verify huggingface_hub installation and configuration\n- `/reset confirm` - Reset the local .fast-agent directory (removes stored permissions and cards)\n\n# Current Status\n\n- **Config file**: `/Users/liliang/.config/hf-inference/hf.config.yaml`\n- **HF_TOKEN**: set\n- **Default model**: `kimi`\n\nTo start using the AI assistant, ensure HF_TOKEN is set and switch to the \"Hugging Face\" mode.",
+        "model": "wizard-setup",
+        "provider": "fast-agent",
+        "request_settings": {
+          "max_tokens": 100000,
+          "temperature": null,
+          "top_p": null,
+          "top_k": null,
+          "min_p": null,
+          "presence_penalty": null,
+          "frequency_penalty": null,
+          "repetition_penalty": null,
+          "use_history": true,
+          "parallel_tool_calls": true,
+          "max_iterations": 99,
+          "tool_result_mode": "postprocess",
+          "streaming_timeout": 300.0,
+          "service_tier": null
+        },
+        "card_provenance": [],
+        "attachment_refs": [],
+        "model_overlay_refs": []
+      }
+    }
+  },
+  "analysis": {
+    "usage_summary": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0
+    },
+    "timing_summary": null,
+    "provider_diagnostics": [],
+    "transport_diagnostics": []
+  }
+}

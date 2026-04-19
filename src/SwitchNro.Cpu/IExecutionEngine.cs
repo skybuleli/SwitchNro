@@ -43,11 +43,23 @@ public interface IExecutionEngine : IDisposable
     void SetSvcResult(ulong returnValue);
 
     /// <summary>将 SVC 处理结果写回（设置 X0 和 X1 返回值）</summary>
+    /// <remarks>保留供外部调用方使用；RunProcess 循环始终使用 3 参数版本</remarks>
     void SetSvcResult(ulong returnValue0, ulong returnValue1);
+
+    /// <summary>将 SVC 处理结果写回（设置 X0、X1 和 X2 返回值）</summary>
+    void SetSvcResult(ulong returnValue0, ulong returnValue1, ulong returnValue2);
 
     /// <summary>获取 PSTATE 状态寄存器</summary>
     ulong GetPstate();
     void SetPstate(ulong value);
+
+    /// <summary>获取/设置 TPIDR_EL0（线程本地存储指针）</summary>
+    ulong GetTpidrEl0();
+    void SetTpidrEl0(ulong value);
+
+    /// <summary>获取/设置 TPIDRRO_EL0（只读线程本地存储指针，Horizon OS 用户态主要 TLS 寄存器）</summary>
+    ulong GetTpidrroEl0();
+    void SetTpidrroEl0(ulong value);
 
     /// <summary>是否正在执行</summary>
     bool IsRunning { get; }

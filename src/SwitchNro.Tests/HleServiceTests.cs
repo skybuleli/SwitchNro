@@ -3,7 +3,10 @@ using System.Linq;
 using SwitchNro.Common;
 using SwitchNro.HLE.Ipc;
 using SwitchNro.HLE.Services;
+using SwitchNro.Horizon;
 using Xunit;
+
+using static SwitchNro.Tests.IpcTestHelper;
 
 namespace SwitchNro.Tests;
 
@@ -12,34 +15,6 @@ namespace SwitchNro.Tests;
 /// </summary>
 public class HleServiceTests
 {
-    /// <summary>辅助方法：创建空的 IpcRequest</summary>
-    private static IpcRequest EmptyRequest(uint commandId) => new()
-    {
-        Header = new IpcMessageHeader(0),
-        CommandId = commandId,
-        Data = [],
-    };
-
-    /// <summary>辅助方法：创建带数据的 IpcRequest</summary>
-    private static IpcRequest RequestWithData(uint commandId, byte[] data) => new()
-    {
-        Header = new IpcMessageHeader(0),
-        CommandId = commandId,
-        Data = data,
-    };
-
-    /// <summary>辅助方法：调用服务命令并返回响应</summary>
-    private static (ResultCode Result, IpcResponse Response) InvokeCommand(IIpcService service, uint commandId, byte[]? data = null)
-    {
-        var request = data != null ? RequestWithData(commandId, data) : EmptyRequest(commandId);
-        var response = new IpcResponse();
-
-        if (!service.CommandTable.TryGetValue(commandId, out var handler))
-            return (ResultCode.SfResult(2), response);
-
-        var result = handler(request, ref response);
-        return (result, response);
-    }
 
     // ──────────────────────────── IpcServiceManager ────────────────────────────
 
@@ -186,11 +161,13 @@ public class HleServiceTests
     [Fact]
     public void NvService_QueryEvent_ReturnsHandle()
     {
-        var service = new NvService();
+        var manager = new IpcServiceManager { HandleTable = new HandleTable() };
+        var service = new NvService(serviceManager: manager);
         var (result, response) = InvokeCommand(service, 3);
 
         Assert.True(result.IsSuccess);
-        Assert.Contains(0x200, response.CopyHandles);
+        Assert.Single(response.CopyHandles); // 返回一个句柄
+        Assert.True(response.CopyHandles[0] >= 0xD000, $"句柄应在内核范围 (≥0xD000)，实际为 0x{response.CopyHandles[0]:X8}");
     }
 
     // ──────────────────────────── NvMemPService (nvmemp:) ────────────────────────────
@@ -599,11 +576,13 @@ public class HleServiceTests
     [Fact]
     public void AudioOutService_RegisterBufferEvent_ReturnsHandle()
     {
-        var service = new AudioOutService();
+        var manager = new IpcServiceManager { HandleTable = new HandleTable() };
+        var service = new AudioOutService(serviceManager: manager);
         var (result, response) = InvokeCommand(service, 14);
 
         Assert.True(result.IsSuccess);
-        Assert.Contains(0x400, response.CopyHandles);
+        Assert.Single(response.CopyHandles); // 返回一个事件句柄
+        Assert.True(response.CopyHandles[0] >= 0xD000, $"句柄应在内核范围 (≥0xD000)，实际为 0x{response.CopyHandles[0]:X8}");
     }
 
     // ──────────────────────────── SocketService (bsd:) ────────────────────────────
