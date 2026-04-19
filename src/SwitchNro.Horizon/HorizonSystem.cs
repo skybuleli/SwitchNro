@@ -220,17 +220,17 @@ public sealed partial class HorizonSystem : IDisposable
     /// <summary>栈区域基地址</summary>
     public const ulong StackBase = 0x0000_0200_0000UL;
 
-    /// <summary>ASLR 区域基地址</summary>
-    public const ulong AslrBase = 0x0000_0800_0000UL;
+ /// <summary>ASLR 区域基地址</summary>
+ public const ulong AslrBase = 0x0000_0800_0000UL;
 
-    /// <summary>ASLR 区域大小 (2GB)</summary>
-    public const ulong AslrSize = 0x0000_8000_0000UL;
+ /// <summary>ASLR 区域大小 (2GB)</summary>
+ public const ulong AslrSize = 0x0000_8000_0000UL;
 
-    /// <summary>Alias 区域基地址</summary>
-    public const ulong AliasBase = 0x0000_4000_0000UL;
+ /// <summary>Alias 区域基地址</summary>
+ public const ulong AliasBase = 0x0000_4000_0000UL;
 
-    /// <summary>Alias 区域大小 (1GB)</summary>
-    public const ulong AliasSize = 0x0000_4000_0000UL;
+ /// <summary>Alias 区域大小 (256MB)</summary>
+ public const ulong AliasSize = 0x1000_0000UL;
 
     /// <summary>TLS 区域大小 (每个线程 0x200 字节)</summary>
     public const ulong TlsSize = 0x200;
@@ -1971,15 +1971,20 @@ public sealed partial class HorizonSystem : IDisposable
     /// <summary>检查地址或大小是否 4KB 对齐 (Horizon OS 标准)</summary>
     private static bool IsPageAligned(ulong value) => (value & 0xFFFUL) == 0;
 
-    /// <summary>
-    /// 检查地址范围是否在进程地址空间内
-    /// 范围: ASLR 基地址 (0x0008_0000) ~ Heap + 256MB (0x3000_0000)
-    /// 包含所有区域: ASLR, TLS, 栈, NRO, Alias, Heap
-    /// </summary>
-    private static bool IsInProcessAddressSpace(ulong address, ulong size)
-    {
-        return address >= AslrBase && (address + size) <= HeapBase + HeapMaxSize;
-    }
+ /// <summary>
+ /// 检查地址范围是否在进程地址空间内
+ /// 范围: TLS 基地址 (0x0100_0000) ~ Heap + 256MB (0x2800_0000)
+ /// 包含所有区域: TLS (0x0100_0000), 栈, NRO/ASLR (0x0800_0000), Alias, Heap
+ /// </summary>
+ private static bool IsInProcessAddressSpace(ulong address, ulong size)
+ {
+ // TLS 区域起点
+ const ulong tlsBase = 0x0000_0100_0000UL;
+ // Heap 区域终点 (HeapBase + HeapMaxSize = 0x2000_0000 + 0x8000_0000 = 0x2800_0000)
+ const ulong processSpaceEnd = HeapBase + HeapMaxSize; // 0x2800_0000
+
+ return address >= tlsBase && (address + size) <= processSpaceEnd;
+ }
 
     /// <summary>检查虚拟地址范围内是否有任何页已映射</summary>
     private bool IsRegionMapped(ulong vaddr, ulong size)

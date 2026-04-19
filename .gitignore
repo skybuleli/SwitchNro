@@ -95,3 +95,15 @@ $RECYCLE.BIN/
 *.orig
 *.rej
 .alma-snapshots
+
+## Nintendo Switch ROM/Homebrew files
+*.nro
+*.nso
+*.nsp
+*.nca
+*.naxx
+*.kip
+*.exefs
+*.romfs
+*.tik
+*.cert
