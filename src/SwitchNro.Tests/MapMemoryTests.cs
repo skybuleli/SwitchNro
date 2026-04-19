@@ -308,17 +308,17 @@ public class MapMemoryTests : IDisposable
         Assert.Equal(ResultCode.KernelResult(TKernelResult.InvalidAddress), result.ReturnCode);
     }
 
-    [Fact]
-    public void MapPhysicalMemory_OutOfRange_ReturnsInvalidAddress()
-    {
-        _process = CreateMockProcess();
+ [Fact]
+ public void MapPhysicalMemory_OutOfRange_ReturnsInvalidAddress()
+ {
+ _process = CreateMockProcess();
 
-        // 超出进程空间上限 (0x3000_0000)
-        var svc = new SvcInfo { SvcNumber = 0x35, X0 = 0x4000_0000, X2 = PageSize };
-        var result = _system.MapPhysicalMemory(svc);
+ // 超出进程空间上限 (HeapBase + HeapMaxSize = 0x2000_0000 + 0x8000_0000 = 0xA000_0000)
+ var svc = new SvcInfo { SvcNumber = 0x35, X0 = 0xB000_0000, X2 = PageSize };
+ var result = _system.MapPhysicalMemory(svc);
 
-        Assert.Equal(ResultCode.KernelResult(TKernelResult.InvalidAddress), result.ReturnCode);
-    }
+ Assert.Equal(ResultCode.KernelResult(TKernelResult.InvalidAddress), result.ReturnCode);
+ }
 
     [Fact]
     public void MapPhysicalMemory_NoActiveProcess_ReturnsInvalidState()

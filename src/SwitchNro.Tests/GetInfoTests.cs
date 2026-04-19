@@ -57,7 +57,7 @@ public class GetInfoTests : IDisposable
         return _process;
     }
 
-    private SvcResult CallGetInfo(InfoType type, ulong handle = 0xFFFF8000, ulong subType = 0)
+    private SvcResult CallGetInfo(InfoType type, ulong handle = 0xFFFF8001, ulong subType = 0)
     {
         var svc = new SvcInfo { SvcNumber = 0x29, X1 = (ulong)type, X2 = handle, X3 = subType };
         return _system.GetInfo(svc);

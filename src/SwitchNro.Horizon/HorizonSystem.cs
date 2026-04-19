@@ -211,14 +211,14 @@ public sealed partial class HorizonSystem : IDisposable
 
     // ──────────────────── 内存区域常量（真实 Horizon 布局） ────────────────────
 
-    /// <summary>堆区域基地址</summary>
-    public const ulong HeapBase = 0x0000_8000_0000UL;
+ /// <summary>堆区域基地址</summary>
+ public const ulong HeapBase = 0x0000_2000_0000UL;
 
-    /// <summary>最大堆大小 (2GB)</summary>
-    public const ulong HeapMaxSize = 0x8000_0000UL;
+ /// <summary>最大堆大小 (2GB)</summary>
+ public const ulong HeapMaxSize = 0x8000_0000UL;
 
-    /// <summary>栈区域基地址</summary>
-    public const ulong StackBase = 0x0000_0200_0000UL;
+ /// <summary>栈区域基地址</summary>
+ public const ulong StackBase = 0x0000_0200_0000UL;
 
  /// <summary>ASLR 区域基地址</summary>
  public const ulong AslrBase = 0x0000_0800_0000UL;
@@ -1867,8 +1867,8 @@ public sealed partial class HorizonSystem : IDisposable
         ulong infoValue = infoType switch
         {
             // ── 进程内存信息 ──
-            InfoType.CoreMask => 0xFUL, // 核心 0-3
-            InfoType.PriorityMask => 0xFFFFFFFFFFFFFFFFUL, 
+ InfoType.CoreMask => 1UL, // 仅核心 0
+ InfoType.PriorityMask => 0x3FUL, // 优先级 0-59
             InfoType.AliasRegionAddress => AliasBase,
             InfoType.AliasRegionSize => AliasSize,
             InfoType.HeapRegionAddress => HeapBase,
@@ -1888,8 +1888,9 @@ public sealed partial class HorizonSystem : IDisposable
             // ── 调试信息 ──
             InfoType.DebuggerAttached => 0UL, // 无调试器附加
 
-            // ── 资源限制 ──
-            InfoType.ResourceLimit => (ulong)(ActiveProcess?.HandleTable.CreateHandle(new KResourceLimit()) ?? 0),
+ // ── 资源限制 ──
+ // 返回当前进程伪句柄 (0xFFFF8001)，因为 resource limit 作用于当前进程
+ InfoType.ResourceLimit => CurrentProcessPseudoHandle,
 
             // ── 系统统计 ──
             InfoType.IdleTickCount => 0UL, // 简化：无空闲计数
