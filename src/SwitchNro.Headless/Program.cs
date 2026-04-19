@@ -248,45 +248,55 @@ internal sealed class Program
                 Console.WriteLine($"    → 成功: X1=0x{svcResult.ReturnValue1:X16} X2=0x{svcResult.ReturnValue2:X16}");
             }
 
-            svcCount++;
+ svcCount++;
 
-            try
-            {
-                result = engine.RunNext();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"❌ RunNext 异常: {ex.Message}");
-                Console.Error.WriteLine($"   PC=0x{engine.GetPC():X16} SP=0x{engine.GetSP():X16}");
-                break;
-            }
+ // 检查 ExitProcess 后进程是否已退出
+ if (process.State == ProcessState.Exited)
+ {
+ result = ExecutionResult.ProcessExited;
+ Console.WriteLine($" → 进程已退出，停止执行");
+ break;
+ }
 
-            // 报告非 SVC 结果
-            if (result != ExecutionResult.SVC)
-            {
-                Console.WriteLine($"  执行结果变更: {result} (PC=0x{engine.GetPC():X16})");
-                if (result == ExecutionResult.Timeout)
-                    break; // 超时退出循环
-            }
-        }
+ try
+ {
+ result = engine.RunNext();
+ }
+ catch (Exception ex)
+ {
+ Console.Error.WriteLine($"❌ RunNext 异常: {ex.Message}");
+ Console.Error.WriteLine($" PC=0x{engine.GetPC():X16} SP=0x{engine.GetSP():X16}");
+ break;
+ }
 
-        Report:
-        // ── 8. 报告结果 ──
-        Console.WriteLine($"\n═══════════════════════════════════════════");
-        Console.WriteLine($"  执行结束");
-        Console.WriteLine($"  SVC 调用数: {svcCount}");
-        Console.WriteLine($"  退出原因: {result}");
-        Console.WriteLine($"  进程状态: {process.State}");
-        Console.WriteLine($"  最终 PC: 0x{engine.GetPC():X16}");
-        Console.WriteLine($"  最终 SP: 0x{engine.GetSP():X16}");
-        if (result == ExecutionResult.MemoryFault)
-            Console.WriteLine($"  ⚠️ 内存异常! 可能是未映射的区域或权限错误");
-        if (result == ExecutionResult.UndefinedInstruction)
-            Console.WriteLine($"  ⚠️ 未定义指令! 可能是 CPU 不支持的指令");
-        if (svcCount >= maxSvcs)
-            Console.WriteLine($"  ⚠️ 已达 SVC 上限，可能存在无限循环");
-        if (result == ExecutionResult.Timeout)
-            Console.WriteLine($"  ⚠️ vCPU 执行超时! Guest 代码可能陷入无 SVC 的死循环");
+ // 报告非 SVC 结果
+ if (result != ExecutionResult.SVC)
+ {
+ Console.WriteLine($" 执行结果变更: {result} (PC=0x{engine.GetPC():X16})");
+ if (result == ExecutionResult.Timeout)
+ break; // 超时退出循环
+ }
+ }
+
+ Report:
+ // ── 8. 报告结果 ──
+ Console.WriteLine($"\n═══════════════════════════════════════════");
+ Console.WriteLine($" 执行结束");
+ Console.WriteLine($" SVC 调用数: {svcCount}");
+ Console.WriteLine($" 退出原因: {result}");
+ Console.WriteLine($" 进程状态: {process.State}");
+ Console.WriteLine($" 最终 PC: 0x{engine.GetPC():X16}");
+ Console.WriteLine($" 最终 SP: 0x{engine.GetSP():X16}");
+ if (result == ExecutionResult.MemoryFault)
+ Console.WriteLine($" ⚠️ 内存异常! 可能是未映射的区域或权限错误");
+ if (result == ExecutionResult.UndefinedInstruction)
+ Console.WriteLine($" ⚠️ 未定义指令! 可能是 CPU 不支持的指令");
+ if (result == ExecutionResult.ProcessExited)
+ Console.WriteLine($" ✓ 程序已完成并干净退出");
+ if (svcCount >= maxSvcs)
+ Console.WriteLine($" ⚠️ 已达 SVC 上限，可能存在无限循环");
+ if (result == ExecutionResult.Timeout)
+ Console.WriteLine($" ⚠️ vCPU 执行超时! Guest 代码可能陷入无 SVC 的死循环");
 
         // 打印 vCPU 退出统计
         if (engine is SwitchNro.Cpu.Hypervisor.HvfExecutionEngine hvfStats)

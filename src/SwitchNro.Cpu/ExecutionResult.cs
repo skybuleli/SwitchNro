@@ -15,11 +15,14 @@ public enum ExecutionResult
     /// <summary>未定义指令</summary>
     UndefinedInstruction,
 
-    /// <summary>正常退出（程序结束）</summary>
-    NormalExit,
+ /// <summary>正常退出（程序结束）</summary>
+ NormalExit,
 
-    /// <summary>执行超时</summary>
-    Timeout,
+ /// <summary>进程主动退出 (ExitProcess)</summary>
+ ProcessExited,
+
+ /// <summary>执行超时</summary>
+ Timeout,
 
     /// <summary>调试暂停</summary>
     DebugPause,
